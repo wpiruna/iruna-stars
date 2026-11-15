@@ -5,7 +5,10 @@ Juego arcade de waterpolo en 2D para móvil (y PC), protagonizado por el Waterpo
 
 Se trabaja por fases (GDD §21). Cada fase termina jugable, publicada y con su lista de pruebas en
 `docs/PRUEBAS/Fn.md`. **No se empieza la fase siguiente sin el visto bueno de Julián.**
-Fase actual: **F0 (base) terminada, pendiente de visto bueno**. Siguiente: F1 (tiro y portero).
+Fase actual: **F0 (base) terminada y publicada**; pendiente del visto bueno de Julián para empezar F1 (tiro y portero).
+
+Publicado en <https://wpiruna.github.io/iruna-stars/> desde el repositorio público `wpiruna/iruna-stars`.
+Cada push a `main` convierte los datos, pasa los tests, compila y publica (`.github/workflows/publicar.yml`).
 
 ## Comandos
 
@@ -75,8 +78,10 @@ src/sim/  src/input/  src/audio/                                vacíos hasta F1
 
 - Repositorio **público** `wpiruna/iruna-stars`, **solo motes**: la columna *Nombre* de la hoja nunca llega
   a los JSON ni al build (hay un test que lo comprueba).
-- **Antes del primer `git push`**: la columna *Nombre* de `datos/plantilla.ods` tiene que estar vacía
-  (el informe lo avisa en "Privacidad"). El historial de git no se borra. No publicar sin su confirmación.
+- **Antes de cada `git push`**: la columna *Nombre* de la hoja tiene que seguir vacía. Si `npm run datos`
+  muestra el apartado "Privacidad", no se sube: el repositorio es público y su historial no se borra.
+- Los commits se firman con la dirección anónima de GitHub de la cuenta `wpiruna` (configurada solo en
+  este repositorio), para que no quede ningún correo personal a la vista.
 - Fotos: filtro arcade automático en el build y cromo vertical 3:4.
 - Nuestro equipo ataca siempre hacia la derecha (`reglas.json` → `partido.cambioDeCampo`).
 - Las plantillas de rivales se congelan; la publicación automática hace commit de las nuevas.
