@@ -1,0 +1,72 @@
+[
+  {
+    "id": "prov-marejada",
+    "nombre": "Atlético Marejada",
+    "siglas": "MAR",
+    "nivel": 2,
+    "estilo": "equilibrado"
+  },
+  {
+    "id": "prov-bajamar",
+    "nombre": "CN Bajamar",
+    "siglas": "BAJ",
+    "nivel": 3,
+    "estilo": "defensivo"
+  },
+  {
+    "id": "prov-tritones",
+    "nombre": "Club Tritones",
+    "siglas": "TRI",
+    "nivel": 4,
+    "estilo": "rapido"
+  },
+  {
+    "id": "prov-corchera",
+    "nombre": "Waterpolo Corchera",
+    "siglas": "COR",
+    "nivel": 4,
+    "estilo": "fisico"
+  },
+  {
+    "id": "prov-siete-olas",
+    "nombre": "CN Siete Olas",
+    "siglas": "OLA",
+    "nivel": 5,
+    "estilo": "lanzadores"
+  },
+  {
+    "id": "prov-espuma",
+    "nombre": "Náutico Espuma",
+    "siglas": "ESP",
+    "nivel": 6,
+    "estilo": "equilibrado"
+  },
+  {
+    "id": "prov-escualos",
+    "nombre": "Escualos del Faro",
+    "siglas": "ESC",
+    "nivel": 6,
+    "estilo": "fisico"
+  },
+  {
+    "id": "prov-galerna",
+    "nombre": "CW Galerna",
+    "siglas": "GAL",
+    "nivel": 7,
+    "estilo": "rapido"
+  },
+  {
+    "id": "prov-kraken",
+    "nombre": "Real Club Kraken",
+    "siglas": "KRA",
+    "nivel": 8,
+    "estilo": "estrellas"
+  },
+  {
+    "id": "prov-poseidon",
+    "nombre": "Poseidón WP",
+    "siglas": "POS",
+    "nivel": 9,
+    "estilo": "defensivo"
+  }
+]

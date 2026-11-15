@@ -1,0 +1,298 @@
+{
+  "equipoId": "prov-corchera",
+  "semilla": 1972718712,
+  "versionGenerador": 1,
+  "nivel": 4,
+  "estilo": "fisico",
+  "jugadores": [
+    {
+      "id": "prov-corchera-01",
+      "dorsal": 1,
+      "mote": "ANCHOA",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 3,
+        "potencia": 6,
+        "precision": 4,
+        "pase": 4,
+        "habilidad": 4,
+        "defensa": 5,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 8,
+        "colocacion": 10,
+        "salida": 4
+      },
+      "rasgo": "kamikaze",
+      "estrella": true
+    },
+    {
+      "id": "prov-corchera-02",
+      "dorsal": 2,
+      "mote": "CICLÓN",
+      "puesto": "boya",
+      "mano": "zurdo",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 7,
+        "potencia": 3,
+        "precision": 3,
+        "pase": 3,
+        "habilidad": 2,
+        "defensa": 7,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-corchera-03",
+      "dorsal": 3,
+      "mote": "ROCA",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 8,
+        "potencia": 4,
+        "precision": 3,
+        "pase": 4,
+        "habilidad": 4,
+        "defensa": 9,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "diesel",
+      "estrella": true
+    },
+    {
+      "id": "prov-corchera-04",
+      "dorsal": 4,
+      "mote": "MOSCA",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 7,
+        "potencia": 2,
+        "precision": 4,
+        "pase": 3,
+        "habilidad": 5,
+        "defensa": 2,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-corchera-05",
+      "dorsal": 5,
+      "mote": "GEISER",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 5,
+        "potencia": 2,
+        "precision": 2,
+        "pase": 2,
+        "habilidad": 3,
+        "defensa": 7,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-corchera-06",
+      "dorsal": 6,
+      "mote": "TÉMPANO",
+      "puesto": "cierre",
+      "mano": "zurdo",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 5,
+        "potencia": 4,
+        "precision": 4,
+        "pase": 3,
+        "habilidad": 5,
+        "defensa": 6,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "cerebro"
+    },
+    {
+      "id": "prov-corchera-07",
+      "dorsal": 7,
+      "mote": "HALCÓN",
+      "puesto": "cierre",
+      "mano": "zurdo",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 1,
+        "resistencia": 7,
+        "potencia": 3,
+        "precision": 2,
+        "pase": 3,
+        "habilidad": 2,
+        "defensa": 7,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-corchera-08",
+      "dorsal": 8,
+      "mote": "BÚFALO",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 7,
+        "potencia": 3,
+        "precision": 3,
+        "pase": 3,
+        "habilidad": 7,
+        "defensa": 4,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-corchera-09",
+      "dorsal": 9,
+      "mote": "MANTA",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 7,
+        "potencia": 3,
+        "precision": 3,
+        "pase": 5,
+        "habilidad": 7,
+        "defensa": 5,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-corchera-10",
+      "dorsal": 10,
+      "mote": "CHISPA",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 1,
+        "resistencia": 5,
+        "potencia": 4,
+        "precision": 3,
+        "pase": 3,
+        "habilidad": 4,
+        "defensa": 4,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-corchera-11",
+      "dorsal": 11,
+      "mote": "YUNQUE",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 5,
+        "potencia": 7,
+        "precision": 5,
+        "pase": 3,
+        "habilidad": 6,
+        "defensa": 5,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-corchera-12",
+      "dorsal": 12,
+      "mote": "GALLO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 5,
+        "potencia": 4,
+        "precision": 4,
+        "pase": 3,
+        "habilidad": 4,
+        "defensa": 2,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-corchera-13",
+      "dorsal": 13,
+      "mote": "TIMÓN",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 1,
+        "resistencia": 5,
+        "potencia": 3,
+        "precision": 7,
+        "pase": 4,
+        "habilidad": 5,
+        "defensa": 3,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 4,
+        "colocacion": 3,
+        "salida": 4
+      },
+      "rasgo": "inseguro"
+    }
+  ]
+}

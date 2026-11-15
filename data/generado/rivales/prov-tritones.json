@@ -1,0 +1,296 @@
+{
+  "equipoId": "prov-tritones",
+  "semilla": 1970843501,
+  "versionGenerador": 1,
+  "nivel": 4,
+  "estilo": "rapido",
+  "jugadores": [
+    {
+      "id": "prov-tritones-01",
+      "dorsal": 1,
+      "mote": "PERCEBE",
+      "puesto": "portero",
+      "mano": "zurdo",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 5,
+        "potencia": 3,
+        "precision": 5,
+        "pase": 3,
+        "habilidad": 4,
+        "defensa": 3,
+        "agresividad": 2
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 5,
+        "colocacion": 3,
+        "salida": 3
+      }
+    },
+    {
+      "id": "prov-tritones-02",
+      "dorsal": 2,
+      "mote": "BÚFALO",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 8,
+        "resistencia": 10,
+        "potencia": 3,
+        "precision": 3,
+        "pase": 3,
+        "habilidad": 10,
+        "defensa": 3,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "estrella": true
+    },
+    {
+      "id": "prov-tritones-03",
+      "dorsal": 3,
+      "mote": "MEJILLÓN",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 7,
+        "potencia": 5,
+        "precision": 5,
+        "pase": 3,
+        "habilidad": 5,
+        "defensa": 2,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-tritones-04",
+      "dorsal": 4,
+      "mote": "MORSA",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 6,
+        "potencia": 2,
+        "precision": 2,
+        "pase": 2,
+        "habilidad": 1,
+        "defensa": 6,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-tritones-05",
+      "dorsal": 5,
+      "mote": "ORCA",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 6,
+        "potencia": 5,
+        "precision": 4,
+        "pase": 5,
+        "habilidad": 6,
+        "defensa": 3,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "diesel"
+    },
+    {
+      "id": "prov-tritones-06",
+      "dorsal": 6,
+      "mote": "LOBO",
+      "puesto": "cierre",
+      "mano": "zurdo",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 6,
+        "potencia": 5,
+        "precision": 4,
+        "pase": 4,
+        "habilidad": 4,
+        "defensa": 1,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-tritones-07",
+      "dorsal": 7,
+      "mote": "NUTRIA",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "boya",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 3,
+        "potencia": 4,
+        "precision": 5,
+        "pase": 4,
+        "habilidad": 6,
+        "defensa": 4,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-tritones-08",
+      "dorsal": 8,
+      "mote": "REMO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 6,
+        "potencia": 3,
+        "precision": 3,
+        "pase": 3,
+        "habilidad": 5,
+        "defensa": 2,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-tritones-09",
+      "dorsal": 9,
+      "mote": "CANGREJO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 7,
+        "potencia": 1,
+        "precision": 4,
+        "pase": 3,
+        "habilidad": 3,
+        "defensa": 7,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "diesel"
+    },
+    {
+      "id": "prov-tritones-10",
+      "dorsal": 10,
+      "mote": "TIMÓN",
+      "puesto": "extremo",
+      "mano": "zurdo",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 5,
+        "potencia": 4,
+        "precision": 3,
+        "pase": 4,
+        "habilidad": 5,
+        "defensa": 2,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "regateador"
+    },
+    {
+      "id": "prov-tritones-11",
+      "dorsal": 11,
+      "mote": "MOSCA",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 5,
+        "potencia": 2,
+        "precision": 2,
+        "pase": 3,
+        "habilidad": 7,
+        "defensa": 1,
+        "agresividad": 2
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-tritones-12",
+      "dorsal": 12,
+      "mote": "MERLUZO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "organizador",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 6,
+        "potencia": 2,
+        "precision": 4,
+        "pase": 7,
+        "habilidad": 6,
+        "defensa": 3,
+        "agresividad": 1
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-tritones-13",
+      "dorsal": 13,
+      "mote": "GALLO",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 4,
+        "potencia": 5,
+        "precision": 4,
+        "pase": 5,
+        "habilidad": 5,
+        "defensa": 2,
+        "agresividad": 2
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 3,
+        "colocacion": 3,
+        "salida": 3
+      }
+    }
+  ]
+}

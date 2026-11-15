@@ -1,0 +1,21 @@
+{
+  "version": "World Aquatics 2025/26 adaptado (pendiente de contrastar en F4)",
+  "modoTarjetas": "arcade",
+  "campo": {
+    "largo": 25,
+    "ancho": 20,
+    "porteriaAncho": 3,
+    "porteriaAlto": 0.9,
+    "lineas": { "dosMetros": 2, "penalti": 5, "seisMetros": 6 }
+  },
+  "partido": { "periodos": 4, "minutosMarcador": 8, "tiemposMuertos": 2, "cambioDeCampo": false },
+  "posesion": { "primera": 28, "segunda": 18, "trasExclusion": 18, "trasCorner": 18, "trasPenalti": 18 },
+  "exclusion": { "segundos": 18, "faltasPersonalesMax": 3, "brutalidadMinutos": 4 },
+  "tiroDirectoFueraDe": 6,
+  "penaltiDesde": 5,
+  "tiroLibreSegundos": 3,
+  "velocidadRelojes": { "partido": 3.2, "posesion": 1.6, "exclusion": 1.6 },
+  "convocatoria": { "campo": 6, "porteros": 1, "suplentesMin": 4, "suplentesMax": 5, "suplentes": 5 },
+  "cambios": { "volantes": false },
+  "tandaPenaltis": { "lanzadores": 5, "muerteSubita": true }
+}

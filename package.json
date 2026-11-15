@@ -1,0 +1,42 @@
+{
+  "name": "iruna-stars",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Waterpolo Iruña Stars 26-27",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "datos": "tsx tools/datos/cli.ts",
+    "rivales": "tsx tools/rivales/cli.ts",
+    "dev": "npm run datos && vite",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build:web": "vite build",
+    "build:single": "vite build --mode single",
+    "build": "npm run datos && npm run typecheck && npm run build:web && npm run build:single && tsx tools/build/postbuild.ts",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource/anton": "^5.3.0",
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "pixi.js": "^8.23.0",
+    "preact": "^10.29.8",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.6",
+    "@types/node": "^20.19.43",
+    "sharp": "^0.35.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.8",
+    "vite-plugin-pwa": "^2.0.0",
+    "vite-plugin-singlefile": "^2.3.4",
+    "vitest": "^4.1.12",
+    "workbox-build": "^7.4.1",
+    "workbox-window": "^7.4.1",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  }
+}

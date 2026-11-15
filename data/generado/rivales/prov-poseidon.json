@@ -1,0 +1,297 @@
+{
+  "equipoId": "prov-poseidon",
+  "semilla": 3061023170,
+  "versionGenerador": 1,
+  "nivel": 9,
+  "estilo": "defensivo",
+  "jugadores": [
+    {
+      "id": "prov-poseidon-01",
+      "dorsal": 1,
+      "mote": "RUBIO",
+      "puesto": "portero",
+      "mano": "zurdo",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 9,
+        "potencia": 7,
+        "precision": 10,
+        "pase": 10,
+        "habilidad": 10,
+        "defensa": 10,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 9,
+        "colocacion": 9,
+        "salida": 8
+      },
+      "rasgo": "muro",
+      "estrella": true
+    },
+    {
+      "id": "prov-poseidon-02",
+      "dorsal": 2,
+      "mote": "FLACO",
+      "puesto": "lateral",
+      "mano": "zurdo",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 9,
+        "resistencia": 8,
+        "potencia": 10,
+        "precision": 10,
+        "pase": 10,
+        "habilidad": 8,
+        "defensa": 10,
+        "agresividad": 9
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-poseidon-03",
+      "dorsal": 3,
+      "mote": "NUDO",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 8,
+        "resistencia": 9,
+        "potencia": 6,
+        "precision": 6,
+        "pase": 8,
+        "habilidad": 8,
+        "defensa": 8,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "estrella": true
+    },
+    {
+      "id": "prov-poseidon-04",
+      "dorsal": 4,
+      "mote": "BESUGO",
+      "puesto": "extremo",
+      "mano": "zurdo",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 10,
+        "resistencia": 9,
+        "potencia": 5,
+        "precision": 6,
+        "pase": 9,
+        "habilidad": 10,
+        "defensa": 9,
+        "agresividad": 9
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-poseidon-05",
+      "dorsal": 5,
+      "mote": "TORNADO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "organizador",
+      "stats": {
+        "velocidad": 10,
+        "resistencia": 9,
+        "potencia": 8,
+        "precision": 9,
+        "pase": 10,
+        "habilidad": 9,
+        "defensa": 10,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-poseidon-06",
+      "dorsal": 6,
+      "mote": "CANGREJO",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "boya",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 10,
+        "potencia": 9,
+        "precision": 9,
+        "pase": 6,
+        "habilidad": 10,
+        "defensa": 10,
+        "agresividad": 10
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-poseidon-07",
+      "dorsal": 7,
+      "mote": "TRUENO",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 10,
+        "resistencia": 10,
+        "potencia": 6,
+        "precision": 10,
+        "pase": 10,
+        "habilidad": 9,
+        "defensa": 10,
+        "agresividad": 9
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-poseidon-08",
+      "dorsal": 8,
+      "mote": "JEFE",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 9,
+        "resistencia": 8,
+        "potencia": 6,
+        "precision": 9,
+        "pase": 8,
+        "habilidad": 8,
+        "defensa": 7,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "regateador",
+      "estrella": true
+    },
+    {
+      "id": "prov-poseidon-09",
+      "dorsal": 9,
+      "mote": "CALAMAR",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 10,
+        "resistencia": 7,
+        "potencia": 10,
+        "precision": 10,
+        "pase": 8,
+        "habilidad": 9,
+        "defensa": 10,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-poseidon-10",
+      "dorsal": 10,
+      "mote": "HALCÓN",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "organizador",
+      "stats": {
+        "velocidad": 10,
+        "resistencia": 9,
+        "potencia": 7,
+        "precision": 9,
+        "pase": 10,
+        "habilidad": 9,
+        "defensa": 10,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-poseidon-11",
+      "dorsal": 11,
+      "mote": "ANCHOA",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 8,
+        "resistencia": 10,
+        "potencia": 6,
+        "precision": 10,
+        "pase": 9,
+        "habilidad": 8,
+        "defensa": 10,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-poseidon-12",
+      "dorsal": 12,
+      "mote": "CHISPA",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "organizador",
+      "stats": {
+        "velocidad": 10,
+        "resistencia": 8,
+        "potencia": 8,
+        "precision": 10,
+        "pase": 10,
+        "habilidad": 10,
+        "defensa": 10,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-poseidon-13",
+      "dorsal": 13,
+      "mote": "PIRATA",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 9,
+        "potencia": 8,
+        "precision": 10,
+        "pase": 10,
+        "habilidad": 8,
+        "defensa": 10,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 9,
+        "colocacion": 9,
+        "salida": 10
+      }
+    }
+  ]
+}

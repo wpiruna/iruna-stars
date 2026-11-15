@@ -1,0 +1,22 @@
+node_modules/
+dist/
+dist-single/
+data/generado/img/
+public/icons/
+
+# Generados por `npm run datos` (se rehacen en cada build)
+data/equipo.json
+data/equipos.json
+data/arbitros.json
+data/copa.json
+data/textos/emilio.json
+data/textos/humor.json
+data/generado/club.json
+data/generado/estado.json
+data/generado/reglas.ajustes.json
+
+# Bloqueos de LibreOffice / Excel al tener la hoja abierta
+.~lock.*
+~$*
+*.log
+.DS_Store

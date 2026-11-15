@@ -1,0 +1,297 @@
+{
+  "equipoId": "prov-galerna",
+  "semilla": 956769999,
+  "versionGenerador": 1,
+  "nivel": 7,
+  "estilo": "rapido",
+  "jugadores": [
+    {
+      "id": "prov-galerna-01",
+      "dorsal": 1,
+      "mote": "MANTA",
+      "puesto": "portero",
+      "mano": "zurdo",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 8,
+        "potencia": 9,
+        "precision": 8,
+        "pase": 8,
+        "habilidad": 7,
+        "defensa": 6,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 7,
+        "colocacion": 7,
+        "salida": 8
+      }
+    },
+    {
+      "id": "prov-galerna-02",
+      "dorsal": 2,
+      "mote": "PELUCA",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 8,
+        "resistencia": 8,
+        "potencia": 6,
+        "precision": 6,
+        "pase": 7,
+        "habilidad": 5,
+        "defensa": 10,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "lenador",
+      "estrella": true
+    },
+    {
+      "id": "prov-galerna-03",
+      "dorsal": 3,
+      "mote": "FARO",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 10,
+        "resistencia": 9,
+        "potencia": 6,
+        "precision": 6,
+        "pase": 8,
+        "habilidad": 6,
+        "defensa": 5,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-galerna-04",
+      "dorsal": 4,
+      "mote": "CHISPA",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 8,
+        "resistencia": 10,
+        "potencia": 7,
+        "precision": 6,
+        "pase": 6,
+        "habilidad": 8,
+        "defensa": 7,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-galerna-05",
+      "dorsal": 5,
+      "mote": "LOBO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 10,
+        "resistencia": 8,
+        "potencia": 5,
+        "precision": 7,
+        "pase": 6,
+        "habilidad": 8,
+        "defensa": 5,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-galerna-06",
+      "dorsal": 6,
+      "mote": "JEFE",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 9,
+        "resistencia": 6,
+        "potencia": 10,
+        "precision": 7,
+        "pase": 6,
+        "habilidad": 6,
+        "defensa": 5,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-galerna-07",
+      "dorsal": 7,
+      "mote": "TIMÓN",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "boya",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 10,
+        "potencia": 8,
+        "precision": 7,
+        "pase": 4,
+        "habilidad": 10,
+        "defensa": 7,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-galerna-08",
+      "dorsal": 8,
+      "mote": "TRUENO",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "boya",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 7,
+        "potencia": 7,
+        "precision": 7,
+        "pase": 5,
+        "habilidad": 10,
+        "defensa": 7,
+        "agresividad": 9
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-galerna-09",
+      "dorsal": 9,
+      "mote": "FLACO",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 10,
+        "resistencia": 9,
+        "potencia": 7,
+        "precision": 7,
+        "pase": 5,
+        "habilidad": 9,
+        "defensa": 3,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "regateador",
+      "estrella": true
+    },
+    {
+      "id": "prov-galerna-10",
+      "dorsal": 10,
+      "mote": "GATO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 9,
+        "resistencia": 9,
+        "potencia": 6,
+        "precision": 6,
+        "pase": 8,
+        "habilidad": 9,
+        "defensa": 5,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-galerna-11",
+      "dorsal": 11,
+      "mote": "NUDO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 9,
+        "resistencia": 8,
+        "potencia": 7,
+        "precision": 9,
+        "pase": 7,
+        "habilidad": 9,
+        "defensa": 6,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-galerna-12",
+      "dorsal": 12,
+      "mote": "REMO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 8,
+        "resistencia": 9,
+        "potencia": 6,
+        "precision": 6,
+        "pase": 6,
+        "habilidad": 6,
+        "defensa": 10,
+        "agresividad": 9
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "diesel"
+    },
+    {
+      "id": "prov-galerna-13",
+      "dorsal": 13,
+      "mote": "PANTERA",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 8,
+        "resistencia": 8,
+        "potencia": 8,
+        "precision": 7,
+        "pase": 9,
+        "habilidad": 6,
+        "defensa": 6,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 7,
+        "colocacion": 6,
+        "salida": 5
+      }
+    }
+  ]
+}

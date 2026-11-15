@@ -1,0 +1,45 @@
+{
+  "ataque33": {
+    "descripcion": "Ataque base 3-3 en igualdad. x = metros desde la línea de gol atacada; y = metros desde el eje de la portería, positivo a la izquierda del atacante.",
+    "puestos": {
+      "boya": { "x": 2.0, "y": 0, "radioZona": 0.8 },
+      "extremoIzq": { "x": 2.0, "y": 4.5, "radioZona": 0.9 },
+      "extremoDer": { "x": 2.0, "y": -4.5, "radioZona": 0.9 },
+      "lateralIzq": { "x": 5.5, "y": 5.0, "radioZona": 1.2 },
+      "lateralDer": { "x": 5.5, "y": -5.0, "radioZona": 1.2 },
+      "cierre": { "x": 6.5, "y": 0, "radioZona": 1.2 }
+    }
+  },
+  "superioridad42": {
+    "descripcion": "Superioridad 6 contra 5: línea de 4 en los 2 m y 2 exteriores. Formación por defecto.",
+    "puestos": {
+      "posteIzq": { "x": 2.0, "y": 1.8, "radioZona": 0.5 },
+      "posteDer": { "x": 2.0, "y": -1.8, "radioZona": 0.5 },
+      "extremoIzq": { "x": 2.0, "y": 5.0, "radioZona": 0.7 },
+      "extremoDer": { "x": 2.0, "y": -5.0, "radioZona": 0.7 },
+      "exteriorIzq": { "x": 5.0, "y": 2.5, "radioZona": 0.9 },
+      "exteriorDer": { "x": 5.0, "y": -2.5, "radioZona": 0.9 }
+    }
+  },
+  "superioridad33": {
+    "descripcion": "Superioridad 3-3: rotación ocasional desde la 4-2.",
+    "puestos": {
+      "poste": { "x": 2.0, "y": 0, "radioZona": 0.5 },
+      "extremoIzq": { "x": 2.0, "y": 4.8, "radioZona": 0.7 },
+      "extremoDer": { "x": 2.0, "y": -4.8, "radioZona": 0.7 },
+      "exteriorIzq": { "x": 4.5, "y": 3.8, "radioZona": 0.9 },
+      "exteriorDer": { "x": 4.5, "y": -3.8, "radioZona": 0.9 },
+      "cierre": { "x": 6.5, "y": 0, "radioZona": 1.0 }
+    }
+  },
+  "inferioridad5": {
+    "descripcion": "Defensa en inferioridad 5 contra 6: dos en los postes, dos exteriores y uno arriba. Coordenadas respecto a la portería defendida.",
+    "puestos": {
+      "posteIzq": { "x": 1.6, "y": 1.6, "radioZona": 0.6 },
+      "posteDer": { "x": 1.6, "y": -1.6, "radioZona": 0.6 },
+      "alaIzq": { "x": 2.6, "y": 3.6, "radioZona": 0.9 },
+      "alaDer": { "x": 2.6, "y": -3.6, "radioZona": 0.9 },
+      "punta": { "x": 4.2, "y": 0, "radioZona": 1.2 }
+    }
+  }
+}

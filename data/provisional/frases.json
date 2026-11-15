@@ -1,0 +1,112 @@
+[
+  {
+    "tipo": "emilio_previa",
+    "para": "",
+    "frase": "Chavales, hoy toca {rival}. Cabeza fría y brazos arriba."
+  },
+  {
+    "tipo": "emilio_previa",
+    "para": "",
+    "frase": "Contra {rival} no se regala ni un balón. ¡Vamos!"
+  },
+  {
+    "tipo": "emilio_previa",
+    "para": "",
+    "frase": "Me he recorrido medio Euskal Herria para veros ganar a {rival}. No me hagáis volver triste."
+  },
+  {
+    "tipo": "emilio_tiempo_muerto",
+    "para": "",
+    "frase": "Respirad. Moved el balón rápido y que tire el que esté solo."
+  },
+  {
+    "tipo": "emilio_tiempo_muerto",
+    "para": "",
+    "frase": "¡Que no cuesta dinero nadar para atrás!"
+  },
+  {
+    "tipo": "emilio_tiempo_muerto",
+    "para": "",
+    "frase": "El boya está solo ahí dentro. Dadle de comer."
+  },
+  {
+    "tipo": "emilio_cambio",
+    "para": "",
+    "frase": "¡CAMBIO! ¡Que ese ya no puede ni con el gorro!"
+  },
+  {
+    "tipo": "emilio_cambio",
+    "para": "",
+    "frase": "¡CAMBIO! Sacadme a ese antes de que se hunda."
+  },
+  {
+    "tipo": "banquillo",
+    "para": "",
+    "frase": "¡Estoy solo!"
+  },
+  {
+    "tipo": "banquillo",
+    "para": "",
+    "frase": "¡Tira ya!"
+  },
+  {
+    "tipo": "banquillo",
+    "para": "",
+    "frase": "¡Árbitro, que le está ahogando!"
+  },
+  {
+    "tipo": "banquillo",
+    "para": "",
+    "frase": "¡Vuelve, vuelve, vuelve!"
+  },
+  {
+    "tipo": "gol",
+    "para": "",
+    "frase": "¡GOLAZO!"
+  },
+  {
+    "tipo": "gol",
+    "para": "",
+    "frase": "¡A la escuadra!"
+  },
+  {
+    "tipo": "gol",
+    "para": "",
+    "frase": "¡Toma, toma y toma!"
+  },
+  {
+    "tipo": "arbitro",
+    "para": "",
+    "frase": "Hoy va a haber que andar con cuidado..."
+  },
+  {
+    "tipo": "arbitro",
+    "para": "",
+    "frase": "Con este se puede hablar. O no."
+  },
+  {
+    "tipo": "victoria",
+    "para": "",
+    "frase": "¡Así se juega! Las cañas las paga Emilio."
+  },
+  {
+    "tipo": "victoria",
+    "para": "",
+    "frase": "Partidazo. Mañana agujetas, hoy gloria."
+  },
+  {
+    "tipo": "derrota",
+    "para": "",
+    "frase": "El agua estaba muy fría. Y muy mojada."
+  },
+  {
+    "tipo": "derrota",
+    "para": "",
+    "frase": "Hoy no ha salido. El jueves se entrena el doble."
+  },
+  {
+    "tipo": "derrota",
+    "para": "",
+    "frase": "Ha sido el árbitro. Siempre es el árbitro."
+  }
+]

@@ -1,0 +1,72 @@
+# Publicación automática (GDD §18.1): cada vez que se sube algo a main —código, la hoja
+# datos/plantilla.xlsx o imágenes en assets/— se convierten los datos, se pasan los tests,
+# se compila y se publica en GitHub Pages. No hace falta tocar nada más.
+name: Publicar
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Convertir la hoja de datos
+        run: npm run datos
+
+      - name: Informe de datos en el resumen
+        run: cat data/INFORME_DATOS.md >> "$GITHUB_STEP_SUMMARY"
+
+      - run: npm test
+
+      - name: Compilar la web y el HTML único
+        run: npm run build
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
+
+      # Las plantillas de rivales se generan una sola vez y quedan guardadas en el repositorio,
+      # para que el Nº 7 de un rival sea siempre el mismo.
+      - name: Guardar plantillas nuevas e informe
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/generado/rivales data/INFORME_DATOS.md
+          if ! git diff --cached --quiet; then
+            git commit -m "datos: plantillas de rivales e informe [skip ci]"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  publicar:
+    needs: compilar
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - id: despliegue
+        uses: actions/deploy-pages@v4

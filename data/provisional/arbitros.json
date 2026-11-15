@@ -1,0 +1,50 @@
+[
+  {
+    "id": "prov-neutro",
+    "nombre": "Don Silbato",
+    "toleranciaContacto": 5,
+    "exclusiones": 5,
+    "tarjetas": 5,
+    "sesgo": 0,
+    "regularidad": 8,
+    "frases": [
+      "Juego limpio y no habrá problemas."
+    ]
+  },
+  {
+    "id": "prov-estricto",
+    "nombre": "La Ley",
+    "toleranciaContacto": 2,
+    "exclusiones": 8,
+    "tarjetas": 7,
+    "sesgo": 0,
+    "regularidad": 9,
+    "frases": [
+      "Hoy va a haber que andar con cuidado..."
+    ]
+  },
+  {
+    "id": "prov-permisivo",
+    "nombre": "Manga Ancha",
+    "toleranciaContacto": 9,
+    "exclusiones": 3,
+    "tarjetas": 2,
+    "sesgo": 0,
+    "regularidad": 6,
+    "frases": [
+      "Aquí se viene a jugar. Que siga, que siga."
+    ]
+  },
+  {
+    "id": "prov-casero",
+    "nombre": "El Casero",
+    "toleranciaContacto": 4,
+    "exclusiones": 6,
+    "tarjetas": 6,
+    "sesgo": 2,
+    "regularidad": 5,
+    "frases": [
+      "Yo pito lo que veo. Otra cosa es lo que vea."
+    ]
+  }
+]

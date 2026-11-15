@@ -1,0 +1,294 @@
+{
+  "equipoId": "prov-siete-olas",
+  "semilla": 2449786231,
+  "versionGenerador": 1,
+  "nivel": 5,
+  "estilo": "lanzadores",
+  "jugadores": [
+    {
+      "id": "prov-siete-olas-01",
+      "dorsal": 1,
+      "mote": "MOSCA",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 6,
+        "potencia": 5,
+        "precision": 6,
+        "pase": 6,
+        "habilidad": 5,
+        "defensa": 5,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 4,
+        "colocacion": 5,
+        "salida": 3
+      }
+    },
+    {
+      "id": "prov-siete-olas-02",
+      "dorsal": 2,
+      "mote": "CABRA",
+      "puesto": "extremo",
+      "mano": "zurdo",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 7,
+        "potencia": 7,
+        "precision": 7,
+        "pase": 4,
+        "habilidad": 4,
+        "defensa": 1,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-siete-olas-03",
+      "dorsal": 3,
+      "mote": "PANTERA",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 6,
+        "potencia": 4,
+        "precision": 3,
+        "pase": 4,
+        "habilidad": 8,
+        "defensa": 3,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-siete-olas-04",
+      "dorsal": 4,
+      "mote": "PELUCA",
+      "puesto": "cierre",
+      "mano": "zurdo",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 5,
+        "potencia": 8,
+        "precision": 8,
+        "pase": 4,
+        "habilidad": 5,
+        "defensa": 3,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-siete-olas-05",
+      "dorsal": 5,
+      "mote": "RUBIO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 6,
+        "potencia": 4,
+        "precision": 4,
+        "pase": 5,
+        "habilidad": 5,
+        "defensa": 8,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-siete-olas-06",
+      "dorsal": 6,
+      "mote": "BÚFALO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "organizador",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 5,
+        "potencia": 6,
+        "precision": 9,
+        "pase": 8,
+        "habilidad": 9,
+        "defensa": 4,
+        "agresividad": 2
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "estrella": true
+    },
+    {
+      "id": "prov-siete-olas-07",
+      "dorsal": 7,
+      "mote": "FLACO",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "boya",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 5,
+        "potencia": 8,
+        "precision": 5,
+        "pase": 2,
+        "habilidad": 7,
+        "defensa": 4,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "lenador"
+    },
+    {
+      "id": "prov-siete-olas-08",
+      "dorsal": 8,
+      "mote": "CONGRIO",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 4,
+        "potencia": 8,
+        "precision": 8,
+        "pase": 5,
+        "habilidad": 6,
+        "defensa": 2,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-siete-olas-09",
+      "dorsal": 9,
+      "mote": "CORAL",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 3,
+        "potencia": 8,
+        "precision": 8,
+        "pase": 6,
+        "habilidad": 4,
+        "defensa": 5,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-siete-olas-10",
+      "dorsal": 10,
+      "mote": "CAIMÁN",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 5,
+        "potencia": 8,
+        "precision": 7,
+        "pase": 4,
+        "habilidad": 4,
+        "defensa": 1,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-siete-olas-11",
+      "dorsal": 11,
+      "mote": "ANCHOA",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "boya",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 4,
+        "potencia": 8,
+        "precision": 7,
+        "pase": 4,
+        "habilidad": 8,
+        "defensa": 3,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-siete-olas-12",
+      "dorsal": 12,
+      "mote": "MEJILLÓN",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 5,
+        "potencia": 8,
+        "precision": 8,
+        "pase": 5,
+        "habilidad": 5,
+        "defensa": 4,
+        "agresividad": 2
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-siete-olas-13",
+      "dorsal": 13,
+      "mote": "JEFE",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 6,
+        "potencia": 6,
+        "precision": 6,
+        "pase": 6,
+        "habilidad": 5,
+        "defensa": 4,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 4,
+        "colocacion": 3,
+        "salida": 4
+      }
+    }
+  ]
+}

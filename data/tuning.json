@@ -1,0 +1,17 @@
+{
+  "_nota": "Constantes de juego que se ajustan probando (física, tiro, IA, árbitro). No es reglamento: eso va en reglas.json.",
+  "calidad": {
+    "bajarSiMsPorFrame": 19,
+    "segundosParaBajar": 3,
+    "niveles": {
+      "alta": { "densidadMax": 2, "causticas": 1, "particulas": 1 },
+      "media": { "densidadMax": 1.5, "causticas": 0.5, "particulas": 0.6 },
+      "baja": { "densidadMax": 1, "causticas": 0, "particulas": 0.3 }
+    }
+  },
+  "controles": {
+    "umbralToqueMs": { "teclado": 180, "mando": 200, "tactil": 220 },
+    "zonaMuertaPad": 0.18,
+    "bufferEntradaMs": 300
+  }
+}

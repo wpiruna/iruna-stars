@@ -1,0 +1,292 @@
+{
+  "equipoId": "prov-marejada",
+  "semilla": 1532768146,
+  "versionGenerador": 1,
+  "nivel": 2,
+  "estilo": "equilibrado",
+  "jugadores": [
+    {
+      "id": "prov-marejada-01",
+      "dorsal": 1,
+      "mote": "NUTRIA",
+      "puesto": "portero",
+      "mano": "zurdo",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 1,
+        "resistencia": 2,
+        "potencia": 3,
+        "precision": 5,
+        "pase": 3,
+        "habilidad": 3,
+        "defensa": 2,
+        "agresividad": 1
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 2,
+        "colocacion": 2,
+        "salida": 1
+      }
+    },
+    {
+      "id": "prov-marejada-02",
+      "dorsal": 2,
+      "mote": "FOCA",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 2,
+        "potencia": 5,
+        "precision": 4,
+        "pase": 4,
+        "habilidad": 3,
+        "defensa": 1,
+        "agresividad": 2
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-marejada-03",
+      "dorsal": 3,
+      "mote": "REMO",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "boya",
+      "stats": {
+        "velocidad": 1,
+        "resistencia": 2,
+        "potencia": 3,
+        "precision": 2,
+        "pase": 3,
+        "habilidad": 3,
+        "defensa": 2,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-marejada-04",
+      "dorsal": 4,
+      "mote": "ORCA",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 1,
+        "resistencia": 1,
+        "potencia": 4,
+        "precision": 5,
+        "pase": 3,
+        "habilidad": 3,
+        "defensa": 1,
+        "agresividad": 1
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-marejada-05",
+      "dorsal": 5,
+      "mote": "OSO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 3,
+        "potencia": 2,
+        "precision": 2,
+        "pase": 1,
+        "habilidad": 4,
+        "defensa": 1,
+        "agresividad": 2
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-marejada-06",
+      "dorsal": 6,
+      "mote": "BESUGO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 2,
+        "potencia": 1,
+        "precision": 1,
+        "pase": 2,
+        "habilidad": 1,
+        "defensa": 5,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-marejada-07",
+      "dorsal": 7,
+      "mote": "MAZO",
+      "puesto": "boya",
+      "mano": "zurdo",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 2,
+        "resistencia": 3,
+        "potencia": 1,
+        "precision": 1,
+        "pase": 1,
+        "habilidad": 2,
+        "defensa": 5,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-marejada-08",
+      "dorsal": 8,
+      "mote": "CANGREJO",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 1,
+        "resistencia": 1,
+        "potencia": 5,
+        "precision": 5,
+        "pase": 4,
+        "habilidad": 4,
+        "defensa": 1,
+        "agresividad": 1
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-marejada-09",
+      "dorsal": 9,
+      "mote": "ERIZO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 2,
+        "potencia": 1,
+        "precision": 2,
+        "pase": 2,
+        "habilidad": 1,
+        "defensa": 5,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-marejada-10",
+      "dorsal": 10,
+      "mote": "PIRATA",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 2,
+        "resistencia": 1,
+        "potencia": 5,
+        "precision": 5,
+        "pase": 3,
+        "habilidad": 3,
+        "defensa": 2,
+        "agresividad": 2
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-marejada-11",
+      "dorsal": 11,
+      "mote": "TORO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 2,
+        "potencia": 2,
+        "precision": 5,
+        "pase": 2,
+        "habilidad": 2,
+        "defensa": 2,
+        "agresividad": 1
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-marejada-12",
+      "dorsal": 12,
+      "mote": "CAIMÁN",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 2,
+        "potencia": 2,
+        "precision": 3,
+        "pase": 1,
+        "habilidad": 2,
+        "defensa": 2,
+        "agresividad": 1
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-marejada-13",
+      "dorsal": 13,
+      "mote": "GALLO",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 1,
+        "resistencia": 1,
+        "potencia": 4,
+        "precision": 1,
+        "pase": 3,
+        "habilidad": 1,
+        "defensa": 1,
+        "agresividad": 1
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 2,
+        "colocacion": 1,
+        "salida": 1
+      }
+    }
+  ]
+}

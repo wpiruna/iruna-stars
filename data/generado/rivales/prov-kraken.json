@@ -1,0 +1,297 @@
+{
+  "equipoId": "prov-kraken",
+  "semilla": 2906562633,
+  "versionGenerador": 1,
+  "nivel": 8,
+  "estilo": "estrellas",
+  "jugadores": [
+    {
+      "id": "prov-kraken-01",
+      "dorsal": 1,
+      "mote": "MAZO",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 7,
+        "potencia": 7,
+        "precision": 9,
+        "pase": 7,
+        "habilidad": 6,
+        "defensa": 6,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 8,
+        "colocacion": 10,
+        "salida": 10
+      },
+      "estrella": true
+    },
+    {
+      "id": "prov-kraken-02",
+      "dorsal": 2,
+      "mote": "ANCHOA",
+      "puesto": "lateral",
+      "mano": "zurdo",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 9,
+        "resistencia": 10,
+        "potencia": 7,
+        "precision": 6,
+        "pase": 7,
+        "habilidad": 6,
+        "defensa": 9,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-kraken-03",
+      "dorsal": 3,
+      "mote": "LOBO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 8,
+        "resistencia": 8,
+        "potencia": 5,
+        "precision": 6,
+        "pase": 9,
+        "habilidad": 9,
+        "defensa": 7,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "estrella": true
+    },
+    {
+      "id": "prov-kraken-04",
+      "dorsal": 4,
+      "mote": "TRUENO",
+      "puesto": "extremo",
+      "mano": "zurdo",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 8,
+        "resistencia": 7,
+        "potencia": 7,
+        "precision": 8,
+        "pase": 7,
+        "habilidad": 8,
+        "defensa": 5,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "estrella": true
+    },
+    {
+      "id": "prov-kraken-05",
+      "dorsal": 5,
+      "mote": "JEFE",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 6,
+        "potencia": 9,
+        "precision": 10,
+        "pase": 7,
+        "habilidad": 8,
+        "defensa": 4,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "estrella": true
+    },
+    {
+      "id": "prov-kraken-06",
+      "dorsal": 6,
+      "mote": "TORO",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 10,
+        "resistencia": 9,
+        "potencia": 7,
+        "precision": 4,
+        "pase": 7,
+        "habilidad": 7,
+        "defensa": 10,
+        "agresividad": 10
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "lenador"
+    },
+    {
+      "id": "prov-kraken-07",
+      "dorsal": 7,
+      "mote": "CHISPA",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 8,
+        "potencia": 7,
+        "precision": 6,
+        "pase": 8,
+        "habilidad": 6,
+        "defensa": 10,
+        "agresividad": 10
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-kraken-08",
+      "dorsal": 8,
+      "mote": "ERIZO",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "boya",
+      "stats": {
+        "velocidad": 7,
+        "resistencia": 8,
+        "potencia": 9,
+        "precision": 7,
+        "pase": 7,
+        "habilidad": 7,
+        "defensa": 7,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-kraken-09",
+      "dorsal": 9,
+      "mote": "BÚFALO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "organizador",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 7,
+        "potencia": 6,
+        "precision": 9,
+        "pase": 10,
+        "habilidad": 7,
+        "defensa": 8,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-kraken-10",
+      "dorsal": 10,
+      "mote": "VIKINGO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 9,
+        "resistencia": 7,
+        "potencia": 6,
+        "precision": 6,
+        "pase": 5,
+        "habilidad": 7,
+        "defensa": 5,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-kraken-11",
+      "dorsal": 11,
+      "mote": "CORAL",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 8,
+        "resistencia": 8,
+        "potencia": 6,
+        "precision": 6,
+        "pase": 8,
+        "habilidad": 6,
+        "defensa": 10,
+        "agresividad": 10
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-kraken-12",
+      "dorsal": 12,
+      "mote": "ROCA",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 8,
+        "potencia": 6,
+        "precision": 6,
+        "pase": 6,
+        "habilidad": 6,
+        "defensa": 7,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-kraken-13",
+      "dorsal": 13,
+      "mote": "BARBAS",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 7,
+        "potencia": 5,
+        "precision": 5,
+        "pase": 8,
+        "habilidad": 6,
+        "defensa": 7,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 7,
+        "colocacion": 7,
+        "salida": 8
+      }
+    }
+  ]
+}

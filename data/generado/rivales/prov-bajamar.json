@@ -1,0 +1,294 @@
+{
+  "equipoId": "prov-bajamar",
+  "semilla": 529694077,
+  "versionGenerador": 1,
+  "nivel": 3,
+  "estilo": "defensivo",
+  "jugadores": [
+    {
+      "id": "prov-bajamar-01",
+      "dorsal": 1,
+      "mote": "GATO",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 3,
+        "potencia": 1,
+        "precision": 4,
+        "pase": 4,
+        "habilidad": 3,
+        "defensa": 6,
+        "agresividad": 2
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 3,
+        "colocacion": 2,
+        "salida": 2
+      }
+    },
+    {
+      "id": "prov-bajamar-02",
+      "dorsal": 2,
+      "mote": "BARBAS",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 2,
+        "resistencia": 4,
+        "potencia": 1,
+        "precision": 3,
+        "pase": 3,
+        "habilidad": 4,
+        "defensa": 5,
+        "agresividad": 1
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-bajamar-03",
+      "dorsal": 3,
+      "mote": "ROCA",
+      "puesto": "extremo",
+      "mano": "zurdo",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 3,
+        "potencia": 1,
+        "precision": 3,
+        "pase": 4,
+        "habilidad": 2,
+        "defensa": 4,
+        "agresividad": 2
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-bajamar-04",
+      "dorsal": 4,
+      "mote": "CAIMÁN",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 4,
+        "potencia": 1,
+        "precision": 4,
+        "pase": 2,
+        "habilidad": 1,
+        "defensa": 6,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-bajamar-05",
+      "dorsal": 5,
+      "mote": "TURBO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 3,
+        "potencia": 1,
+        "precision": 2,
+        "pase": 3,
+        "habilidad": 2,
+        "defensa": 5,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-bajamar-06",
+      "dorsal": 6,
+      "mote": "CANGREJO",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 5,
+        "potencia": 1,
+        "precision": 2,
+        "pase": 3,
+        "habilidad": 3,
+        "defensa": 6,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-bajamar-07",
+      "dorsal": 7,
+      "mote": "BÚFALO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 2,
+        "resistencia": 3,
+        "potencia": 1,
+        "precision": 3,
+        "pase": 2,
+        "habilidad": 4,
+        "defensa": 6,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-bajamar-08",
+      "dorsal": 8,
+      "mote": "FLACO",
+      "puesto": "cierre",
+      "mano": "zurdo",
+      "arquetipo": "organizador",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 4,
+        "potencia": 1,
+        "precision": 4,
+        "pase": 6,
+        "habilidad": 5,
+        "defensa": 6,
+        "agresividad": 1
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-bajamar-09",
+      "dorsal": 9,
+      "mote": "VIKINGO",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 2,
+        "resistencia": 4,
+        "potencia": 2,
+        "precision": 1,
+        "pase": 3,
+        "habilidad": 2,
+        "defensa": 6,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-bajamar-10",
+      "dorsal": 10,
+      "mote": "TORNADO",
+      "puesto": "lateral",
+      "mano": "zurdo",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 3,
+        "potencia": 10,
+        "precision": 10,
+        "pase": 3,
+        "habilidad": 10,
+        "defensa": 5,
+        "agresividad": 1
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "estrella": true
+    },
+    {
+      "id": "prov-bajamar-11",
+      "dorsal": 11,
+      "mote": "SEPIA",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 2,
+        "potencia": 1,
+        "precision": 4,
+        "pase": 2,
+        "habilidad": 2,
+        "defensa": 5,
+        "agresividad": 2
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-bajamar-12",
+      "dorsal": 12,
+      "mote": "MERLUZO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 2,
+        "potencia": 2,
+        "precision": 2,
+        "pase": 4,
+        "habilidad": 3,
+        "defensa": 5,
+        "agresividad": 2
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-bajamar-13",
+      "dorsal": 13,
+      "mote": "CICLÓN",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 2,
+        "resistencia": 4,
+        "potencia": 2,
+        "precision": 3,
+        "pase": 4,
+        "habilidad": 3,
+        "defensa": 3,
+        "agresividad": 1
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 1,
+        "colocacion": 2,
+        "salida": 1
+      },
+      "rasgo": "inseguro"
+    }
+  ]
+}

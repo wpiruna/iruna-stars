@@ -1,0 +1,295 @@
+{
+  "equipoId": "prov-espuma",
+  "semilla": 3071125670,
+  "versionGenerador": 1,
+  "nivel": 6,
+  "estilo": "equilibrado",
+  "jugadores": [
+    {
+      "id": "prov-espuma-01",
+      "dorsal": 1,
+      "mote": "FOCA",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 7,
+        "potencia": 7,
+        "precision": 6,
+        "pase": 6,
+        "habilidad": 5,
+        "defensa": 6,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 8,
+        "colocacion": 6,
+        "salida": 6
+      }
+    },
+    {
+      "id": "prov-espuma-02",
+      "dorsal": 2,
+      "mote": "FARO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 6,
+        "potencia": 6,
+        "precision": 7,
+        "pase": 7,
+        "habilidad": 6,
+        "defensa": 5,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-espuma-03",
+      "dorsal": 3,
+      "mote": "MORSA",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "boya",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 5,
+        "potencia": 7,
+        "precision": 5,
+        "pase": 6,
+        "habilidad": 8,
+        "defensa": 6,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-espuma-04",
+      "dorsal": 4,
+      "mote": "TURBO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "organizador",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 5,
+        "potencia": 5,
+        "precision": 7,
+        "pase": 8,
+        "habilidad": 6,
+        "defensa": 7,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-espuma-05",
+      "dorsal": 5,
+      "mote": "BÚFALO",
+      "puesto": "extremo",
+      "mano": "zurdo",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 9,
+        "resistencia": 8,
+        "potencia": 6,
+        "precision": 3,
+        "pase": 7,
+        "habilidad": 7,
+        "defensa": 5,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-espuma-06",
+      "dorsal": 6,
+      "mote": "NUDO",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "todoterreno",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 8,
+        "potencia": 6,
+        "precision": 3,
+        "pase": 7,
+        "habilidad": 7,
+        "defensa": 7,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-espuma-07",
+      "dorsal": 7,
+      "mote": "LOBO",
+      "puesto": "lateral",
+      "mano": "zurdo",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 5,
+        "potencia": 8,
+        "precision": 8,
+        "pase": 6,
+        "habilidad": 6,
+        "defensa": 4,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-espuma-08",
+      "dorsal": 8,
+      "mote": "TORO",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "organizador",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 5,
+        "potencia": 6,
+        "precision": 9,
+        "pase": 9,
+        "habilidad": 6,
+        "defensa": 6,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "estrella": true
+    },
+    {
+      "id": "prov-espuma-09",
+      "dorsal": 9,
+      "mote": "CANGREJO",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 9,
+        "resistencia": 8,
+        "potencia": 6,
+        "precision": 5,
+        "pase": 7,
+        "habilidad": 6,
+        "defensa": 5,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "diesel"
+    },
+    {
+      "id": "prov-espuma-10",
+      "dorsal": 10,
+      "mote": "MEJILLÓN",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "boya",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 5,
+        "potencia": 6,
+        "precision": 6,
+        "pase": 5,
+        "habilidad": 9,
+        "defensa": 6,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "iman"
+    },
+    {
+      "id": "prov-espuma-11",
+      "dorsal": 11,
+      "mote": "ORCA",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "organizador",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 7,
+        "potencia": 4,
+        "precision": 7,
+        "pase": 9,
+        "habilidad": 7,
+        "defensa": 5,
+        "agresividad": 4
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-espuma-12",
+      "dorsal": 12,
+      "mote": "GATO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 8,
+        "resistencia": 7,
+        "potencia": 5,
+        "precision": 8,
+        "pase": 6,
+        "habilidad": 8,
+        "defensa": 4,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-espuma-13",
+      "dorsal": 13,
+      "mote": "BESUGO",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 6,
+        "potencia": 6,
+        "precision": 6,
+        "pase": 6,
+        "habilidad": 7,
+        "defensa": 6,
+        "agresividad": 3
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 6,
+        "colocacion": 3,
+        "salida": 5
+      }
+    }
+  ]
+}

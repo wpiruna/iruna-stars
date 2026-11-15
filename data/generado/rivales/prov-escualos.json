@@ -1,0 +1,297 @@
+{
+  "equipoId": "prov-escualos",
+  "semilla": 1701658692,
+  "versionGenerador": 1,
+  "nivel": 6,
+  "estilo": "fisico",
+  "jugadores": [
+    {
+      "id": "prov-escualos-01",
+      "dorsal": 1,
+      "mote": "FARO",
+      "puesto": "portero",
+      "mano": "diestro",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 7,
+        "potencia": 5,
+        "precision": 5,
+        "pase": 6,
+        "habilidad": 7,
+        "defensa": 7,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 9,
+        "colocacion": 9,
+        "salida": 7
+      },
+      "rasgo": "muro",
+      "estrella": true
+    },
+    {
+      "id": "prov-escualos-02",
+      "dorsal": 2,
+      "mote": "FOCA",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 8,
+        "potencia": 7,
+        "precision": 8,
+        "pase": 6,
+        "habilidad": 7,
+        "defensa": 5,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "misil"
+    },
+    {
+      "id": "prov-escualos-03",
+      "dorsal": 3,
+      "mote": "ORCA",
+      "puesto": "lateral",
+      "mano": "zurdo",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 5,
+        "potencia": 7,
+        "precision": 7,
+        "pase": 6,
+        "habilidad": 6,
+        "defensa": 8,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "misil"
+    },
+    {
+      "id": "prov-escualos-04",
+      "dorsal": 4,
+      "mote": "ERIZO",
+      "puesto": "lateral",
+      "mano": "diestro",
+      "arquetipo": "velocista",
+      "stats": {
+        "velocidad": 8,
+        "resistencia": 9,
+        "potencia": 5,
+        "precision": 5,
+        "pase": 4,
+        "habilidad": 7,
+        "defensa": 5,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-escualos-05",
+      "dorsal": 5,
+      "mote": "CORAL",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "boya",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 6,
+        "potencia": 7,
+        "precision": 6,
+        "pase": 4,
+        "habilidad": 8,
+        "defensa": 8,
+        "agresividad": 9
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "rasgo": "lenador"
+    },
+    {
+      "id": "prov-escualos-06",
+      "dorsal": 6,
+      "mote": "LOBO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 7,
+        "potencia": 8,
+        "precision": 5,
+        "pase": 5,
+        "habilidad": 7,
+        "defensa": 7,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-escualos-07",
+      "dorsal": 7,
+      "mote": "SEPIA",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 5,
+        "resistencia": 7,
+        "potencia": 6,
+        "precision": 8,
+        "pase": 6,
+        "habilidad": 6,
+        "defensa": 7,
+        "agresividad": 6
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-escualos-08",
+      "dorsal": 8,
+      "mote": "CALAMAR",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 7,
+        "potencia": 5,
+        "precision": 4,
+        "pase": 5,
+        "habilidad": 6,
+        "defensa": 9,
+        "agresividad": 9
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-escualos-09",
+      "dorsal": 9,
+      "mote": "MORSA",
+      "puesto": "cierre",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 4,
+        "resistencia": 8,
+        "potencia": 5,
+        "precision": 4,
+        "pase": 4,
+        "habilidad": 3,
+        "defensa": 9,
+        "agresividad": 9
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-escualos-10",
+      "dorsal": 10,
+      "mote": "TORNADO",
+      "puesto": "extremo",
+      "mano": "diestro",
+      "arquetipo": "extremo",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 6,
+        "potencia": 8,
+        "precision": 6,
+        "pase": 5,
+        "habilidad": 6,
+        "defensa": 5,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-escualos-11",
+      "dorsal": 11,
+      "mote": "BÚFALO",
+      "puesto": "cierre",
+      "mano": "zurdo",
+      "arquetipo": "lanzador",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 6,
+        "potencia": 9,
+        "precision": 8,
+        "pase": 5,
+        "habilidad": 5,
+        "defensa": 6,
+        "agresividad": 7
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-escualos-12",
+      "dorsal": 12,
+      "mote": "CHISPA",
+      "puesto": "boya",
+      "mano": "diestro",
+      "arquetipo": "defensor",
+      "stats": {
+        "velocidad": 6,
+        "resistencia": 7,
+        "potencia": 5,
+        "precision": 5,
+        "pase": 7,
+        "habilidad": 5,
+        "defensa": 9,
+        "agresividad": 8
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado"
+    },
+    {
+      "id": "prov-escualos-13",
+      "dorsal": 13,
+      "mote": "RUBIO",
+      "puesto": "portero",
+      "mano": "zurdo",
+      "arquetipo": "portero",
+      "stats": {
+        "velocidad": 3,
+        "resistencia": 7,
+        "potencia": 6,
+        "precision": 7,
+        "pase": 6,
+        "habilidad": 7,
+        "defensa": 7,
+        "agresividad": 5
+      },
+      "frases": [],
+      "fotos": [],
+      "origen": "generado",
+      "statsPortero": {
+        "reflejos": 6,
+        "colocacion": 6,
+        "salida": 6
+      }
+    }
+  ]
+}
