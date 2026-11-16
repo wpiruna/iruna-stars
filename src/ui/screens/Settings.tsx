@@ -100,6 +100,16 @@ export function Settings() {
         <Choice label="Cambio automático de defensor" setting="autoSwitchDefender" options={yesNo} />
         <Choice label="Sonido" setting="sound" options={yesNo} />
         <Choice
+          label="Ambiente"
+          hint="El agua y el público de fondo: aplauden los goles y las paradas, y pitan al árbitro."
+          setting="ambience"
+          options={[
+            { value: 'normal', label: 'Normal' },
+            { value: 'bajo', label: 'Bajo' },
+            { value: 'no', label: 'Sin ambiente' },
+          ]}
+        />
+        <Choice
           label="Dificultad"
           hint="Cambia los reflejos y las decisiones del rival, no al árbitro."
           setting="difficulty"

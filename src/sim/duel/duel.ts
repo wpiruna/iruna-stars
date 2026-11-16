@@ -25,7 +25,7 @@ import {
   type ShotPlan,
   type ShotTuning,
 } from '../shooting/model';
-import { ballAt } from '../shooting/trajectory';
+import { ballAt, goalVelocity, keepInNet, POOL_WALL } from '../shooting/trajectory';
 
 const DT = STEP_MS / 1000;
 const GRAVITY = 9.8;
@@ -385,12 +385,14 @@ export class Duel {
     this.ball.z = plan.arrival.v;
 
     switch (outcome.type) {
-      case 'goal':
-        v.x = ux * speed * 0.45;
-        v.y = uy * speed * 0.45;
-        v.z = plan.mode === 'lob' ? -3 : 0.5;
+      case 'goal': {
+        const g = goalVelocity(plan, goal, ux, uy, outcome.viaPost);
+        v.x = g.x;
+        v.y = g.y;
+        v.z = g.z;
         if (outcome.viaPost) events.push({ type: 'frame', at: { ...this.ball } });
         break;
+      }
       case 'save':
         if (outcome.held) {
           this.ballHolder = 'keeper';
@@ -442,22 +444,15 @@ export class Duel {
       b.z += v.z * DT;
       if (b.z > 0) v.z -= GRAVITY * DT;
 
-      // Net: the ball is caught by the back of the goal.
+      // Net: a goal stays inside it (side netting, roof and back); a miss goes on to the wall.
       const depth = (b.x - goal.x) * goal.facing;
-      if (this.outcome?.type === 'goal') {
-        if (!this.inNet && depth >= 0.75) {
-          this.inNet = true;
-          events.push({ type: 'net', at: { ...b } });
-          v.x = v.y = 0;
-        }
-        if (this.inNet) {
-          b.x = goal.x + goal.facing * 0.78;
-          b.y = clamp(b.y, goal.y - goal.halfWidth + 0.15, goal.y + goal.halfWidth - 0.15);
-        }
+      if (this.outcome?.type === 'goal' && keepInNet(b, v, goal) && !this.inNet) {
+        this.inNet = true;
+        events.push({ type: 'net', at: { ...b } });
       }
       // Pool wall behind the goal: a wide shot dies against the deck.
-      if (depth > 2.2) {
-        b.x = goal.x + goal.facing * 2.2;
+      if (depth > POOL_WALL) {
+        b.x = goal.x + goal.facing * POOL_WALL;
         v.x = 0;
         v.y *= 0.5;
       }

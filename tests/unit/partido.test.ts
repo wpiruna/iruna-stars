@@ -535,3 +535,47 @@ describe('árbitro en el partido', () => {
     expect(match.period).toBe(1);
   });
 });
+
+describe('el balón y la red', () => {
+  it('un gol se queda dentro de la red; un tiro fuera acaba fuera de la portería', { timeout: 120_000 }, () => {
+    let goals = 0;
+    let misses = 0;
+    for (let i = 0; i < 12 && (goals < 10 || misses < 6); i++) {
+      const match = makeMatch({ seed: `red-${i}`, home: { power: 9, accuracy: 4 }, away: { power: 9, accuracy: 4 } });
+      for (let s = 0; s < 60 * 400 && (goals < 10 || misses < 6); s++) {
+        for (const e of match.step(NEUTRAL)) {
+          if (e.type === 'goal') {
+            const goal = match.goalOf(e.side);
+            // Watch the ball for the whole celebration: never outside the goal.
+            for (let k = 0; k < 60 * 2; k++) {
+              match.step(NEUTRAL);
+              const b = match.ball.pos;
+              const behind = (b.x - goal.x) * goal.facing;
+              if (behind > 0.05) {
+                expect(Math.abs(b.y - goal.y)).toBeLessThan(goal.halfWidth);
+                expect(behind).toBeLessThan(0.85);
+                expect(b.z).toBeLessThan(goal.height);
+              }
+            }
+            const b = match.ball.pos;
+            expect((b.x - goal.x) * goal.facing).toBeGreaterThan(0);
+            expect(Math.abs(b.y - goal.y)).toBeLessThan(goal.halfWidth);
+            goals++;
+          } else if (e.type === 'outcome' && e.outcome.type === 'miss') {
+            const shooter = match.ball.lastTouch;
+            const goal = match.goalOf(shooter?.team ?? 0);
+            for (let k = 0; k < 30; k++) match.step(NEUTRAL);
+            const b = match.ball.pos;
+            const behind = (b.x - goal.x) * goal.facing;
+            // Out: beside the goal, or behind the net against the wall, never resting inside it.
+            const insideNet = behind > 0 && behind < 0.85 && Math.abs(b.y - goal.y) < goal.halfWidth && b.z < goal.height;
+            expect(insideNet).toBe(false);
+            misses++;
+          }
+        }
+      }
+    }
+    expect(goals).toBeGreaterThanOrEqual(10);
+    expect(misses).toBeGreaterThanOrEqual(6);
+  });
+});

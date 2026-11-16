@@ -1,15 +1,54 @@
 /**
  * Sound effects synthesised with WebAudio (GDD §16): no audio files, nothing to license and
  * nothing to download. Everything is built from oscillators and filtered noise.
+ *
+ * Besides the one-off effects there is a background (the "ambience"): the water moving with the
+ * swimmers, the odd stroke splashing, and a crowd that murmurs, gets excited on a break and
+ * reacts to goals, saves, the post and the referee. It is kept low on purpose.
  */
 
 export type SoundName = 'whistle' | 'throw' | 'splash' | 'post' | 'net' | 'save' | 'cheer' | 'groan' | 'horn' | 'click' | 'charge';
 
+/** What the crowd reacts to. "Us" is always our team. */
+export type CrowdMoment =
+  | 'goalUs'
+  | 'goalThem'
+  | 'saveUs'
+  | 'saveThem'
+  | 'post'
+  | 'exclusionThem'
+  | 'exclusionUs'
+  | 'stealUs'
+  | 'win'
+  | 'lose';
+
+interface AmbienceNodes {
+  bus: GainNode;
+  water: GainNode;
+  spray: GainNode;
+  crowd: GainNode | null;
+  sources: AudioScheduledSourceNode[];
+}
+
+const clamp01 = (x: number): number => Math.min(1, Math.max(0, x));
+
 export class Sfx {
   enabled = true;
+  /** Loudness of the background: 1 normal, 0.5 low, 0 none (Ajustes → Ambiente). */
+  ambienceLevel = 1;
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
   private noise: AudioBuffer | null = null;
+  /** Four seconds of noise for the long loops (one second would be heard repeating). */
+  private bed: AudioBuffer | null = null;
+  /** A pre-baked round of applause: hundreds of claps would be too many nodes to schedule live. */
+  private applauseBuffer: AudioBuffer | null = null;
+  private amb: AmbienceNodes | null = null;
+  /** The ambience asked for before audio was unlocked (a page opened straight into a match). */
+  private wanted: { crowd: boolean } | null = null;
+  private ducked = false;
+  private strokeClock = 0;
+  private ambienceTick = 0;
 
   /** Browsers only allow audio after a user gesture: call this from the first tap or key. */
   unlock(): void {
@@ -28,9 +67,296 @@ export class Sfx {
         for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
       }
       if (this.context.state === 'suspended') void this.context.resume();
+      if (this.wanted && !this.amb) this.startAmbience(this.wanted);
     } catch {
       this.context = null;
     }
+  }
+
+  /** In the background the game is silent. */
+  setHidden(hidden: boolean): void {
+    const ctx = this.context;
+    if (!ctx) return;
+    try {
+      if (hidden && ctx.state === 'running') void ctx.suspend();
+      else if (!hidden && ctx.state === 'suspended') void ctx.resume();
+    } catch {
+      // Nothing to do: the next tap unlocks it again.
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------
+  // Ambience: water and crowd
+  // ------------------------------------------------------------------------------------------
+
+  /** Starts the background of a match, a shoot-out or a training session (without crowd). */
+  startAmbience(options: { crowd: boolean }): void {
+    this.stopAmbience();
+    this.wanted = options;
+    const ctx = this.context;
+    const master = this.master;
+    if (!ctx || !master) return;
+    try {
+      this.bed ??= this.makeNoise(ctx, 4);
+      const now = ctx.currentTime;
+      const bus = ctx.createGain();
+      bus.gain.setValueAtTime(0.0001, now);
+      bus.gain.setTargetAtTime(this.busLevel(), now, 0.8);
+      bus.connect(master);
+      const sources: AudioScheduledSourceNode[] = [];
+
+      // Water: a low wash that swells slowly like the surface, and a hiss of spray with the swimming.
+      const water = ctx.createGain();
+      water.gain.value = 0.04;
+      const waterSource = this.loopSource(ctx, this.bed);
+      const low = this.filter(ctx, 'lowpass', 620, 0.5);
+      waterSource.connect(low).connect(water).connect(bus);
+      const spray = ctx.createGain();
+      spray.gain.value = 0;
+      waterSource.connect(this.filter(ctx, 'bandpass', 2300, 0.7)).connect(spray).connect(bus);
+      const swell = ctx.createOscillator();
+      swell.frequency.value = 0.17;
+      const swellDepth = ctx.createGain();
+      swellDepth.gain.value = 0.015;
+      swell.connect(swellDepth).connect(water.gain);
+      sources.push(waterSource, swell);
+
+      // Crowd: a murmur around voice frequencies, with a little babble in it.
+      let crowd: GainNode | null = null;
+      if (options.crowd) {
+        crowd = ctx.createGain();
+        crowd.gain.value = 0.025;
+        const crowdSource = this.loopSource(ctx, this.bed, 1.7);
+        crowdSource.connect(this.filter(ctx, 'bandpass', 430, 1.1)).connect(crowd);
+        const upper = ctx.createGain();
+        upper.gain.value = 0.45;
+        crowdSource.connect(this.filter(ctx, 'bandpass', 1050, 1.6)).connect(upper).connect(crowd);
+        crowd.connect(bus);
+        for (const [rate, depth] of [
+          [2.9, 0.006],
+          [5.3, 0.004],
+        ] as const) {
+          const babble = ctx.createOscillator();
+          babble.frequency.value = rate;
+          const amount = ctx.createGain();
+          amount.gain.value = depth;
+          babble.connect(amount).connect(crowd.gain);
+          sources.push(babble);
+        }
+        sources.push(crowdSource);
+      }
+      for (const source of sources) {
+        if (source instanceof AudioBufferSourceNode) source.start(now, Math.random() * 3);
+        else source.start(now);
+      }
+      this.amb = { bus, water, spray, crowd, sources };
+      this.strokeClock = 0.5;
+    } catch {
+      this.amb = null;
+    }
+  }
+
+  stopAmbience(): void {
+    this.wanted = null;
+    const amb = this.amb;
+    const ctx = this.context;
+    this.amb = null;
+    if (!amb || !ctx) return;
+    try {
+      const now = ctx.currentTime;
+      amb.bus.gain.cancelScheduledValues(now);
+      amb.bus.gain.setTargetAtTime(0.0001, now, 0.15);
+      for (const source of amb.sources) source.stop(now + 0.8);
+      setTimeout(() => amb.bus.disconnect(), 1000);
+    } catch {
+      // Already stopped.
+    }
+  }
+
+  /** Paused: the background drops to a whisper. */
+  duckAmbience(ducked: boolean): void {
+    this.ducked = ducked;
+    this.applyLevel();
+  }
+
+  /** The settings changed (sound on or off, ambience level). */
+  applyLevel(): void {
+    const amb = this.amb;
+    const ctx = this.context;
+    if (!amb || !ctx) return;
+    amb.bus.gain.setTargetAtTime(this.busLevel(), ctx.currentTime, 0.3);
+  }
+
+  private busLevel(): number {
+    if (!this.enabled) return 0.0001;
+    return Math.max(0.0001, 2.8 * this.ambienceLevel * (this.ducked ? 0.25 : 1));
+  }
+
+  /**
+   * Every step: `activity` 0–1 is how hard the swimmers are swimming (louder water, more
+   * strokes splashing), `tension` 0–1 how close a goal feels (the crowd gets louder).
+   */
+  setAmbience(activity: number, tension: number, dt: number): void {
+    const amb = this.amb;
+    const ctx = this.context;
+    if (!amb || !ctx || ctx.state !== 'running' || this.ambienceLevel <= 0 || !this.enabled) return;
+    const a = clamp01(activity);
+    // Strokes: the odd splash from somebody swimming hard.
+    this.strokeClock -= dt;
+    if (this.strokeClock <= 0) {
+      this.strokeClock = (0.25 + 1.2 * (1 - a)) * (0.5 + Math.random());
+      if (a > 0.12) {
+        const now = ctx.currentTime;
+        const pitch = 900 + Math.random() * 1600;
+        this.burst(now, 0.12 + Math.random() * 0.12, (0.012 + 0.03 * a) * (0.6 + 0.4 * Math.random()), { type: 'bandpass', from: pitch, to: pitch * 0.45, q: 0.9 }, amb.bus);
+      }
+    }
+    // The continuous parts only need a few updates a second.
+    this.ambienceTick += dt;
+    if (this.ambienceTick < 0.1) return;
+    this.ambienceTick = 0;
+    const now = ctx.currentTime;
+    amb.water.gain.setTargetAtTime(0.035 + 0.035 * a, now, 0.4);
+    amb.spray.gain.setTargetAtTime(0.016 * a, now, 0.4);
+    amb.crowd?.gain.setTargetAtTime(0.02 + 0.04 * clamp01(tension), now, 0.6);
+  }
+
+  /** The crowd reacts. Quiet if there is no crowd (training) or no ambience. */
+  crowd(moment: CrowdMoment, strength = 1): void {
+    const amb = this.amb;
+    const ctx = this.context;
+    if (!this.enabled || !ctx || ctx.state !== 'running') return;
+    if (!amb?.crowd || this.ambienceLevel <= 0) {
+      // Without a crowd, the old short reactions to goals.
+      if (moment === 'goalUs') this.play('cheer');
+      else if (moment === 'goalThem') this.play('groan');
+      return;
+    }
+    const bus = amb.bus;
+    const now = ctx.currentTime;
+    const k = clamp01(strength);
+    try {
+      switch (moment) {
+        case 'goalUs':
+        case 'win':
+          // A roar that swells, then applause underneath.
+          this.burst(now, 2.4, 0.2 * k, { type: 'bandpass', from: 560, to: 900, q: 0.6, swell: 0.35 }, bus);
+          this.burst(now + 0.05, 2.0, 0.09 * k, { type: 'bandpass', from: 1500, to: 1900, q: 0.9, swell: 0.3 }, bus);
+          this.applause(now + 0.35, moment === 'win' ? 4 : 2.8, 0.16 * k);
+          break;
+        case 'goalThem':
+          // Disappointment, and a few claps from their supporters.
+          this.burst(now, 1.1, 0.1 * k, { type: 'bandpass', from: 650, to: 360, q: 0.8, swell: 0.12 }, bus);
+          this.applause(now + 0.2, 1.4, 0.045 * k);
+          break;
+        case 'saveUs':
+          // "¡Uaaah!" and applause for our keeper.
+          this.burst(now, 1.2, 0.21 * k, { type: 'bandpass', from: 480, to: 1000, q: 0.7, swell: 0.18 }, bus);
+          this.applause(now + 0.25, 1.8, 0.18 * k);
+          break;
+        case 'saveThem':
+          this.burst(now, 1.0, 0.1 * k, { type: 'bandpass', from: 900, to: 430, q: 0.8, swell: 0.1 }, bus);
+          break;
+        case 'post':
+          // "¡Uuuuh!": up, then down.
+          this.burst(now, 0.5, 0.17 * k, { type: 'bandpass', from: 420, to: 760, q: 1, swell: 0.12 }, bus);
+          this.burst(now + 0.45, 0.8, 0.14 * k, { type: 'bandpass', from: 760, to: 380, q: 1, swell: 0.05 }, bus);
+          break;
+        case 'exclusionThem':
+          this.burst(now, 0.8, 0.07 * k, { type: 'bandpass', from: 700, to: 1000, q: 0.7, swell: 0.12 }, bus);
+          this.applause(now + 0.1, 1.0, 0.06 * k);
+          break;
+        case 'exclusionUs':
+          // Booing the referee, and a couple of whistles.
+          this.burst(now, 1.5, 0.15 * k, { type: 'bandpass', from: 300, to: 260, q: 2.2, swell: 0.25 }, bus);
+          for (let i = 0; i < 3; i++) {
+            const at = now + 0.15 + Math.random() * 0.8;
+            const f = 2400 + Math.random() * 900;
+            this.tone(f, at, 0.28, 0.02 * k, 'sine', { attack: 0.03, to: f * 1.25 }, bus);
+          }
+          break;
+        case 'stealUs':
+          this.burst(now, 0.6, 0.05 * k, { type: 'bandpass', from: 650, to: 900, q: 0.7, swell: 0.1 }, bus);
+          break;
+        case 'lose':
+          this.applause(now, 2.2, 0.06 * k);
+          break;
+      }
+    } catch {
+      // A reaction that fails must never interrupt the game.
+    }
+  }
+
+  private applause(start: number, duration: number, gain: number): void {
+    const ctx = this.context as AudioContext;
+    const amb = this.amb;
+    if (!amb) return;
+    this.applauseBuffer ??= this.makeApplause(ctx);
+    const source = ctx.createBufferSource();
+    source.buffer = this.applauseBuffer;
+    source.playbackRate.value = 0.9 + Math.random() * 0.2;
+    const envelope = ctx.createGain();
+    envelope.gain.setValueAtTime(0.0001, start);
+    envelope.gain.exponentialRampToValueAtTime(gain, start + 0.15);
+    envelope.gain.setTargetAtTime(0.0001, start + duration * 0.55, duration * 0.18);
+    source.connect(this.filter(ctx, 'bandpass', 1700, 0.45)).connect(envelope).connect(amb.bus);
+    source.start(start, Math.random() * 0.4);
+    source.stop(start + duration + 0.3);
+  }
+
+  private makeNoise(ctx: AudioContext, seconds: number): AudioBuffer {
+    const length = Math.floor(ctx.sampleRate * seconds);
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+    return buffer;
+  }
+
+  /** Hundreds of short, decaying noise claps, denser at the start, in one buffer. */
+  private makeApplause(ctx: AudioContext): AudioBuffer {
+    const rate = ctx.sampleRate;
+    const seconds = 4;
+    const length = Math.floor(rate * seconds);
+    const buffer = ctx.createBuffer(1, length, rate);
+    const data = buffer.getChannelData(0);
+    for (let c = 0; c < 340; c++) {
+      const at = Math.pow(Math.random(), 1.5) * (seconds - 0.05);
+      const start = Math.floor(at * rate);
+      const amplitude = (0.25 + 0.75 * Math.random()) * (1 - 0.55 * (at / seconds));
+      const size = Math.floor((0.008 + 0.016 * Math.random()) * rate);
+      const decay = size * 0.25;
+      for (let i = 0; i < size && start + i < length; i++) data[start + i] = (data[start + i] ?? 0) + (Math.random() * 2 - 1) * amplitude * Math.exp(-i / decay);
+    }
+    // Take the thump out (one-pole high-pass) and normalise.
+    let previousIn = 0;
+    let previousOut = 0;
+    let peak = 0;
+    for (let i = 0; i < length; i++) {
+      const x = data[i] ?? 0;
+      const y = 0.96 * (previousOut + x - previousIn);
+      previousIn = x;
+      previousOut = y;
+      data[i] = y;
+      peak = Math.max(peak, Math.abs(y));
+    }
+    if (peak > 0) for (let i = 0; i < length; i++) data[i] = (data[i] ?? 0) / peak;
+    return buffer;
+  }
+
+  private loopSource(ctx: AudioContext, buffer: AudioBuffer, rate = 1): AudioBufferSourceNode {
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.playbackRate.value = rate;
+    return source;
+  }
+
+  private filter(ctx: AudioContext, type: BiquadFilterType, frequency: number, q: number): BiquadFilterNode {
+    const biquad = ctx.createBiquadFilter();
+    biquad.type = type;
+    biquad.frequency.value = frequency;
+    biquad.Q.value = q;
+    return biquad;
   }
 
   /** `intensity` 0–1 scales loudness (and pitch, for some sounds). */
@@ -96,6 +422,7 @@ export class Sfx {
     gain: number,
     type: OscillatorType,
     options: { tremolo?: number; attack?: number; to?: number } = {},
+    destination?: AudioNode,
   ): void {
     const ctx = this.context as AudioContext;
     const oscillator = ctx.createOscillator();
@@ -117,7 +444,7 @@ export class Sfx {
       lfo.start(start);
       lfo.stop(start + duration);
     }
-    envelope.connect(this.master as GainNode);
+    envelope.connect(destination ?? (this.master as GainNode));
     oscillator.start(start);
     oscillator.stop(start + duration + 0.02);
   }
@@ -127,6 +454,7 @@ export class Sfx {
     duration: number,
     gain: number,
     filter: { type: BiquadFilterType; from: number; to: number; q: number; swell?: number },
+    destination?: AudioNode,
   ): void {
     const ctx = this.context as AudioContext;
     if (!this.noise) return;
@@ -144,7 +472,7 @@ export class Sfx {
     envelope.gain.exponentialRampToValueAtTime(0.0001, start + duration);
     source.connect(biquad);
     biquad.connect(envelope);
-    envelope.connect(this.master as GainNode);
+    envelope.connect(destination ?? (this.master as GainNode));
     source.start(start, Math.random() * 0.5);
     source.stop(start + duration + 0.02);
   }

@@ -12,7 +12,7 @@ import type { FormationsData } from '../../data/schema';
 import { aimFromPad, type Aim, type DuelConfig } from '../duel/duel';
 import type { Field, Goal, Vec2 } from '../field';
 import { planShot, resolveShot, type KeeperTuning, type ShotPlan } from '../shooting/model';
-import { ballAt } from '../shooting/trajectory';
+import { ballAt, goalVelocity, keepInNet, POOL_WALL } from '../shooting/trajectory';
 import { AttackInput, type PadState } from './control';
 import { driveDestination, insidePoint, startDrive, stepDrive, type Drive } from './drive';
 import { assign, slotCost, slotPoint } from './formation';
@@ -983,7 +983,7 @@ export class AttackDrill {
     switch (outcome.type) {
       case 'goal':
         ball.dead = true;
-        ball.vel = { x: ux * speed * 0.45, y: uy * speed * 0.45, z: plan.mode === 'lob' ? -3 : 0.5 };
+        ball.vel = goalVelocity(plan, goal, ux, uy, outcome.viaPost);
         if (outcome.viaPost) events.push({ type: 'frame', at: { ...ball.pos } });
         this.end('goal', events);
         break;
@@ -1027,19 +1027,13 @@ export class AttackDrill {
     b.z += v.z * DT;
     if (b.z > 0) v.z -= 9.8 * DT;
     const depth = (b.x - goal.x) * goal.facing;
-    if (this.lastResult === 'goal') {
-      if (!ball.inNet && depth >= 0.75) {
-        ball.inNet = true;
-        events.push({ type: 'net', at: { ...b } });
-        v.x = v.y = 0;
-      }
-      if (ball.inNet) {
-        b.x = goal.x + goal.facing * 0.78;
-        b.y = clamp(b.y, goal.y - goal.halfWidth + 0.15, goal.y + goal.halfWidth - 0.15);
-      }
+    // A goal stays in the net; anything else that crosses the line goes on to the wall.
+    if (this.lastResult === 'goal' && keepInNet(b, v, goal) && !ball.inNet) {
+      ball.inNet = true;
+      events.push({ type: 'net', at: { ...b } });
     }
-    if (depth > 2.2) {
-      b.x = goal.x + goal.facing * 2.2;
+    if (depth > POOL_WALL) {
+      b.x = goal.x + goal.facing * POOL_WALL;
       v.x = 0;
       v.y *= 0.5;
     }

@@ -37,3 +37,50 @@ export function ballAt(plan: ShotPlan, goal: Goal, s: number, t: ShotTuning, out
   out.z = Math.max(0, z);
   return out;
 }
+
+/** How deep a ball sits in the net (the drawn net is 0.85 m deep). */
+export const NET_BACK = 0.78;
+/** Beyond this, behind the goal line, the ball stops against the wall of the pool. */
+export const POOL_WALL = 2.2;
+
+/**
+ * Speed of a ball just after it has gone in. Through the middle it carries on; off the inside of
+ * a post it is turned towards the middle of the goal, so it never leaves sideways.
+ */
+export function goalVelocity(plan: ShotPlan, goal: Goal, ux: number, uy: number, viaPost: boolean): Vec3 {
+  const speed = plan.arrivalSpeed;
+  let y = uy * speed * 0.45;
+  if (viaPost) y = -Math.sign(plan.arrival.u || 1) * Math.abs(y) * 0.5;
+  return { x: ux * speed * 0.45, y, z: plan.mode === 'lob' ? -3 : 0.5 };
+}
+
+/**
+ * A ball that has gone in stays in the goal: the side netting, the roof and the back of the net
+ * stop it. Call it every step while the ball is free after a goal. Returns true when the ball
+ * touches the netting (for the ripple on the net and the sound).
+ */
+export function keepInNet(b: Vec3, v: Vec3, goal: Goal): boolean {
+  const behind = (b.x - goal.x) * goal.facing;
+  if (behind <= 0) return false;
+  let touched = false;
+  const side = goal.halfWidth - 0.15;
+  const lateral = b.y - goal.y;
+  if (Math.abs(lateral) > side) {
+    b.y = goal.y + Math.sign(lateral) * side;
+    v.y *= -0.15;
+    v.x *= 0.6;
+    touched = true;
+  }
+  const roof = goal.height - 0.12;
+  if (b.z > roof) {
+    b.z = roof;
+    if (v.z > 0) v.z *= -0.2;
+  }
+  if (behind > NET_BACK) {
+    b.x = goal.x + goal.facing * NET_BACK;
+    v.x = 0;
+    v.y *= 0.3;
+    touched = true;
+  }
+  return touched;
+}

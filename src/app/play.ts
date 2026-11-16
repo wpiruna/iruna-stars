@@ -85,6 +85,8 @@ export class PlaySession {
       },
     });
     this.view = this.shotView.view;
+    // The shoot-out has its crowd; the shooting lab is an empty pool.
+    deps.sfx.startAmbience({ crowd: request.kind === 'shootout' });
     const duelTuning = { shot: data.tuning.tiro, keeperTuning: data.tuning.portero, penaltyKeeper: data.tuning.penalti.portero };
 
     if (request.kind === 'shootout') {
@@ -167,6 +169,9 @@ export class PlaySession {
     }
     for (const event of events) this.handle(event);
     if (duel) this.refreshHud(duel);
+    // The crowd hushes for each kick and talks between them.
+    const kicking = duel !== null && duel.phase !== 'aftermath' && duel.phase !== 'done';
+    this.deps.sfx.setAmbience(0.05, kicking ? 0.04 : 0.35, 1 / 60);
 
     if (this.finishTimer >= 0) {
       this.finishTimer -= 1 / 60;
@@ -303,17 +308,18 @@ export class PlaySession {
 
     if (outcome.type === 'goal') {
       this.banner(outcome.viaPost ? '¡PALO Y GOL!' : '¡GOL!', ours ? 'great' : 'bad', ours ? detail : speed);
-      sfx.play(ours ? 'cheer' : 'groan');
+      sfx.crowd(ours ? 'goalUs' : 'goalThem');
       if (save.settings.vibration) vibrate(ours ? [30, 40, 60] : 40);
     } else if (outcome.type === 'save') {
       this.banner(outcome.held ? '¡PARADA!' : '¡PARADÓN!', ours ? 'bad' : 'great', ours ? detail : speed);
       sfx.play('save');
-      if (!ours) sfx.play('cheer', 0.8);
+      sfx.crowd(ours ? 'saveThem' : 'saveUs');
     } else if (outcome.type === 'post') {
       this.banner(plan.landing === 'bar' ? '¡AL LARGUERO!' : '¡AL PALO!', ours ? 'bad' : 'great', ours ? detail : speed);
+      sfx.crowd('post');
     } else {
       this.banner(outcome.where === 'over' ? '¡ALTA!' : '¡FUERA!', ours ? 'bad' : 'great', ours ? detail : speed);
-      if (ours) sfx.play('groan', 0.6);
+      if (ours) sfx.crowd('saveThem', 0.6);
     }
 
     if (this.lab) {
@@ -328,6 +334,7 @@ export class PlaySession {
     if (!shootout || !this.rival) return;
     const won = winner === 0;
     this.deps.sfx.play('horn');
+    this.deps.sfx.crowd(won ? 'win' : 'lose');
     const phrase = pickPhrase(this.deps.data, won ? 'victoria' : 'derrota', () => this.rng.next(), this.rival.id, this.rival.name);
     hud.set({ role: null, result: { won, score: [shootout.score.goals(0), shootout.score.goals(1)], phrase } });
     this.banner(won ? '¡VICTORIA!' : 'DERROTA', won ? 'great' : 'bad');

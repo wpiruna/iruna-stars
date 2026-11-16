@@ -39,7 +39,7 @@ import {
 } from '../rules/rules';
 import { fromGoal, type Field, type Goal, type Vec2 } from '../field';
 import { estimateSave, planShot, resolveShot, type AimSide, type KeeperTuning, type ShotMode, type ShotPlan } from '../shooting/model';
-import { ballAt } from '../shooting/trajectory';
+import { ballAt, goalVelocity, keepInNet, POOL_WALL } from '../shooting/trajectory';
 import { Brain, type BrainAction } from './brain';
 import { MatchInput, type ControlContext, type MatchIntent } from './input';
 import { assignMarks, bestMatching, countAdvantage, defenceSettled } from './roles';
@@ -2211,7 +2211,7 @@ export class Match {
     switch (outcome.type) {
       case 'goal':
         ball.dead = true;
-        ball.vel = { x: ux * speed * 0.45, y: uy * speed * 0.45, z: plan.mode === 'lob' ? -3 : 0.5 };
+        ball.vel = goalVelocity(plan, goal, ux, uy, outcome.viaPost);
         if (outcome.viaPost) events.push({ type: 'frame', at: { ...ball.pos } });
         this.scoreGoal(team, shooter, events);
         break;
@@ -2323,18 +2323,14 @@ export class Match {
           this.scheduleRestart(kind, kind === 'corner' ? scorerSide.index : ((1 - scorerSide.index) as TeamSide), b, 0.6);
         }
       }
+      // A goal stays in the net; anything else that crosses the line goes on to the wall.
       const scoredHere = this.phase === 'goal' && this.sides[this.lastGoalSide].attacks === goal;
-      if (scoredHere && after >= 0.75 && !ball.inNet && Math.abs(b.y - goal.y) < goal.halfWidth + 0.2) {
+      if (scoredHere && keepInNet(b, v, goal) && !ball.inNet) {
         ball.inNet = true;
         events.push({ type: 'net', at: { ...b } });
-        v.x = v.y = 0;
       }
-      if (ball.inNet && scoredHere) {
-        b.x = goal.x + goal.facing * 0.78;
-        b.y = clamp(b.y, goal.y - goal.halfWidth + 0.15, goal.y + goal.halfWidth - 0.15);
-      }
-      if (after > 2.2) {
-        b.x = goal.x + goal.facing * 2.2;
+      if (after > POOL_WALL) {
+        b.x = goal.x + goal.facing * POOL_WALL;
         v.x = 0;
         v.y *= 0.5;
       }

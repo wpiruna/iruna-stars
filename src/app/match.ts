@@ -22,6 +22,7 @@ import { Match } from '../sim/match/match';
 import type { Swimmer } from '../sim/attack/types';
 import type { MatchEvent } from '../sim/match/types';
 import { emptyHud, hud, type BannerTone } from '../ui/hud';
+import { swimActivity } from './ambience';
 import { frameAttack } from './attack';
 import { vibrate } from './platform';
 import type { DebugCall, Session } from './session';
@@ -41,6 +42,7 @@ export interface MatchOptions {
 }
 
 const who = (s: Swimmer): string => `Nº ${s.player.number} ${s.player.nickname.toUpperCase()}`;
+
 
 export interface MatchDeps {
   renderer: Renderer;
@@ -69,6 +71,8 @@ export class MatchSession implements Session {
   readonly referee: Referee | null;
   /** What the exclusion tags in the water last said, so they are only redrawn when they change. */
   private readonly tags = new Map<Swimmer, string>();
+  /** Team of the last shot, to know whose keeper made a save. */
+  private lastShooterTeam: 0 | 1 = 0;
 
   constructor(
     private readonly deps: MatchDeps,
@@ -143,6 +147,8 @@ export class MatchSession implements Session {
       (camera, snap) => this.direct(camera, snap),
     );
     this.view = this.playView.view;
+    // Water always; a crowd only for real matches (the labs are training).
+    deps.sfx.startAmbience({ crowd: !lab });
     hud.set({
       ...emptyHud(),
       mode: 'match',
@@ -272,11 +278,26 @@ export class MatchSession implements Session {
     }
     const events = this.match.step({ x: input.x, y: input.y, touching: input.touching, shot: input.shot, skill: input.skill });
     for (const event of events) this.handle(event);
+    this.deps.sfx.setAmbience(swimActivity([...this.match.inPlay(0), ...this.match.inPlay(1)]), this.tension(), 1 / 60);
     this.refreshHud();
     if (this.finishTimer >= 0) {
       this.finishTimer -= 1 / 60;
       if (this.finishTimer < 0) this.deps.onFinished();
     }
+  }
+
+  /** How close a goal feels, for the crowd: a break with a man free, a shot coming, the clock running out. */
+  private tension(): number {
+    const m = this.match;
+    if (m.phase === 'penalty') return 0.08;
+    if (m.phase === 'goal') return 0.6;
+    if (m.phase !== 'transition' && m.phase !== 'positional') return 0.15;
+    let t = m.phase === 'transition' ? 0.3 : 0.2;
+    if (m.advantage) t = 0.75;
+    if (m.charging) t = Math.max(t, 0.55);
+    if (m.shotClock < 5) t += 0.15;
+    if (m.exclusions.length > 0) t += 0.1;
+    return t;
   }
 
   render(alpha: number, dt: number, profile: QualityProfile): void {
@@ -415,13 +436,15 @@ export class MatchSession implements Session {
         const ours = event.side === 0;
         const scorer = event.scorer ? `Nº ${event.scorer.player.number} ${event.scorer.player.nickname.toUpperCase()}` : 'En propia puerta';
         this.banner('¡GOL!', ours ? 'great' : 'bad', `${scorer} · ${event.score[0]}–${event.score[1]}`);
-        sfx.play(ours ? 'cheer' : 'groan');
+        sfx.crowd(ours ? 'goalUs' : 'goalThem');
         if (save.settings.vibration) vibrate(ours ? [30, 40, 60] : 40);
         break;
       }
       case 'steal':
-        if (event.by.team === 0) this.banner('¡ROBO!', 'great');
-        sfx.play(event.by.team === 0 ? 'cheer' : 'groan', 0.5);
+        if (event.by.team === 0) {
+          this.banner('¡ROBO!', 'great');
+          sfx.crowd('stealUs');
+        }
         break;
       case 'stealTry':
         if (!event.won) sfx.play('splash', 0.3);
@@ -476,6 +499,7 @@ export class MatchSession implements Session {
         sfx.play('splash', 0.15);
         break;
       case 'release':
+        this.lastShooterTeam = event.who.team;
         sfx.play('throw', event.plan.speed / 26);
         if (event.who.team === 0 && save.settings.vibration) vibrate(18);
         break;
@@ -494,9 +518,16 @@ export class MatchSession implements Session {
       case 'net':
         sfx.play('net');
         break;
-      case 'outcome':
-        if (event.outcome.type === 'save') sfx.play('save');
+      case 'outcome': {
+        // The crowd: applause for our keeper, an "ooh" for theirs on a good chance, "¡uuuh!" off the post.
+        const difficulty = event.save ? 1 - event.save.probability : 0.5;
+        if (event.outcome.type === 'save') {
+          sfx.play('save');
+          if (this.lastShooterTeam === 1) sfx.crowd('saveUs', 0.4 + difficulty);
+          else if (difficulty > 0.35) sfx.crowd('saveThem', 0.5 + difficulty);
+        } else if (event.outcome.type === 'post') sfx.crowd('post');
         break;
+      }
       case 'switch':
       case 'noReceiver':
       case 'noDrive':
@@ -538,13 +569,17 @@ export class MatchSession implements Session {
       this.banner(event.motive, tone, ours ? 'Falta en ataque: balón para ellos' : 'Falta en ataque: balón nuestro');
     }
     if (event.teamWarning) this.banner('AMARILLA AL EQUIPO', tone, 'Demasiadas faltas: la próxima fuerte será roja');
-    sfx.play(event.sanction === 'ordinary' ? 'click' : ours ? 'groan' : 'cheer', event.sanction === 'ordinary' ? 0.4 : 0.6);
+    // The crowd boos the referee when he sends one of ours off, and cheers the other way round.
+    if (event.sanction === 'ordinary') sfx.play('click', 0.4);
+    else sfx.crowd(ours ? 'exclusionUs' : 'exclusionThem');
   }
 
   private finish(): void {
     const m = this.match;
     const [ours, theirs] = m.score;
     const outcome = ours > theirs ? 'won' : ours < theirs ? 'lost' : 'draw';
+    if (outcome === 'won') this.deps.sfx.crowd('win');
+    else this.deps.sfx.crowd('lose');
     const phrase = outcome === 'draw' ? '' : pickPhrase(this.deps.data, outcome === 'won' ? 'victoria' : 'derrota', () => this.rng.next(), this.rival.id, this.rival.name);
     const state = hud.get().match;
     if (state) hud.set({ match: { ...state, stats: [{ ...m.stats[0] }, { ...m.stats[1] }] } });

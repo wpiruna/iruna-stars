@@ -66,7 +66,8 @@ src/sim/referee/       árbitro: si pita lo clasificado (perfil, sesgo acotado, 
 src/app/session.ts     interfaz común de lo que se juega; play.ts (tanda y laboratorio), attack.ts (entrenamiento),
                        match.ts (partido y laboratorios de contraataque; dirige la cámara)
                        convierten eventos de la simulación en imagen, sonido, vibración y HUD
-src/audio/sfx.ts       efectos sintetizados con WebAudio
+src/audio/sfx.ts       efectos sintetizados con WebAudio y el ambiente (agua y público que reacciona); app/ambience.ts
+                       calcula cuánto nadan para el agua
 src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/debug/
 ```
 
@@ -144,3 +145,8 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
 - Equilibrio F4 (`npm run sim`, 2 periodos de 6 min): ~4 goles por equipo, ~2 exclusiones por equipo, ~0,3 penaltis,
   superioridad ~35 % de gol, ~66 % de posesiones al estático con ~21 s de posesión. Faltas que provoca la IA en `tuning.json` → `partido.faltas`; árbitro en `arbitro`.
 - Nadie da golpes todavía: la acción violenta existe en las reglas pero no se genera en el juego.
+- Tras un gol el balón se queda dentro de la red (`keepInNet` en `src/sim/shooting/trajectory.ts`, común al partido,
+  al entrenamiento y a la tanda); un tiro que no es gol acaba fuera. Hay un test con partidos reales.
+- Ambiente pedido por Julián: agua y público de fondo «sin ser molesto» (Ajustes → Ambiente: normal, bajo, sin). Niveles
+  medidos con un render sin altavoces: fondo ≈ −41 dBFS (−36 en una contra), efectos ≈ −32, gol nuestro ≈ −27, silbato
+  ≈ −23. Si se toca, que el fondo quede siempre por debajo de los efectos. El entrenamiento no tiene público.

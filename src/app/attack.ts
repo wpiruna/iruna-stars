@@ -20,6 +20,7 @@ import type { AttackEvent, AttackResult, Slot } from '../sim/attack/types';
 import { pickKeeper } from '../sim/duel/shootout';
 import { fieldFromRules } from '../sim/field';
 import { emptyHud, hud, type AttackScenario, type BannerTone } from '../ui/hud';
+import { swimActivity } from './ambience';
 import { vibrate } from './platform';
 import type { Session } from './session';
 
@@ -106,6 +107,8 @@ export class AttackSession implements Session {
       (camera, snap) => frameAttack(camera, this.drill.goal, this.drill.ball.pos.y, snap),
     );
     this.view = this.attackView.view;
+    // Thursday training: the water, but nobody in the stands.
+    deps.sfx.startAmbience({ crowd: false });
     hud.set({
       ...emptyHud(),
       mode: 'attack',
@@ -143,6 +146,7 @@ export class AttackSession implements Session {
     }
     const events = this.drill.step({ x: input.x, y: input.y, touching: input.touching, shot: input.shot, skill: input.skill });
     for (const event of events) this.handle(event);
+    this.deps.sfx.setAmbience(swimActivity(this.drill.all.filter((s) => !s.keeper)), 0, 1 / 60);
     this.refreshHud();
   }
 

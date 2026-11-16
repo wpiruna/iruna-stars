@@ -40,7 +40,9 @@ export async function startGame(gameHost: HTMLElement, controlsHost: HTMLElement
   const quality = new QualityManager(data.tuning.calidad);
   quality.setChoice(save.settings.quality);
   const sfx = new Sfx();
+  const AMBIENCE = { normal: 1, bajo: 0.5, no: 0 } as const;
   sfx.enabled = save.settings.sound;
+  sfx.ambienceLevel = AMBIENCE[save.settings.ambience];
 
   // Cap numbers are baked into textures: the font has to be ready before the first one.
   try {
@@ -64,6 +66,8 @@ export async function startGame(gameHost: HTMLElement, controlsHost: HTMLElement
   save.subscribe((saved) => {
     if (saved.settings.quality !== quality.mode) quality.setChoice(saved.settings.quality);
     sfx.enabled = saved.settings.sound;
+    sfx.ambienceLevel = AMBIENCE[saved.settings.ambience];
+    sfx.applyLevel();
     touch.apply(saved.settings);
   });
 
@@ -72,8 +76,17 @@ export async function startGame(gameHost: HTMLElement, controlsHost: HTMLElement
   let lastRequest: Request | null = null;
   let labSettings: LabSettings = DEFAULT_LAB_SETTINGS;
 
+  // Paused: the water and the crowd drop to a whisper.
+  let wasPaused = false;
+  hud.subscribe(() => {
+    const paused = hud.get().paused;
+    if (paused !== wasPaused) sfx.duckAmbience(paused);
+    wasPaused = paused;
+  });
+
   const endSession = (): void => {
     if (!session) return;
+    sfx.stopAmbience();
     stage.root.removeChild(session.view);
     session.view.destroy({ children: true });
     session = null;
@@ -302,6 +315,7 @@ export async function startGame(gameHost: HTMLElement, controlsHost: HTMLElement
   document.addEventListener('visibilitychange', () => {
     last = performance.now();
     loop.reset();
+    sfx.setHidden(document.visibilityState === 'hidden');
     if (document.visibilityState === 'hidden') {
       if (session && ui.get().screen === 'play') session.setPaused(true);
       touch.release();

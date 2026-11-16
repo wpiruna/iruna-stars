@@ -21,6 +21,8 @@ const SettingsSchema = z.object({
   vibration: z.boolean().default(true),
   autoSwitchDefender: z.boolean().default(true),
   sound: z.boolean().default(true),
+  /** Background of water and crowd: normal, low or none. */
+  ambience: z.enum(['normal', 'bajo', 'no']).default('normal'),
   difficulty: z.enum(['facil', 'normal', 'dificil']).default('normal'),
 });
 export type Settings = z.infer<typeof SettingsSchema>;
