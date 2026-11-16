@@ -13,8 +13,23 @@ export interface HudTeam {
 
 export type BannerTone = 'great' | 'bad' | 'neutral';
 
+export type AttackScenario = 'completo' | 'entradas' | 'boya';
+
+export interface HudAttack {
+  scenario: AttackScenario;
+  /** Shot clock in whole scoreboard seconds. */
+  clock: number;
+  attacks: number;
+  goals: number;
+  shots: number;
+  turnovers: number;
+  /** Team names for the strip at the top. */
+  ours: { id: string; code: string; shield?: string };
+  rival: { id: string; code: string; shield?: string; name: string };
+}
+
 export interface HudState {
-  mode: 'shootout' | 'lab' | null;
+  mode: 'shootout' | 'lab' | 'attack' | null;
   teams: [HudTeam, HudTeam] | null;
   kicksPerTeam: number;
   suddenDeath: boolean;
@@ -34,6 +49,7 @@ export interface HudState {
   device: InputDevice;
   result: { won: boolean; score: [number, number]; phrase: string } | null;
   lab: { shots: number; goals: number; saves: number; posts: number; misses: number; last: string } | null;
+  attack: HudAttack | null;
 }
 
 export const emptyHud = (): HudState => ({
@@ -51,6 +67,7 @@ export const emptyHud = (): HudState => ({
   device: 'keyboard',
   result: null,
   lab: null,
+  attack: null,
 });
 
 export const hud = createStore<HudState>(emptyHud());

@@ -1,5 +1,6 @@
 import { DebugPanel, RotateOverlay, UpdateToast } from './components/Overlays';
 import { Ctx, type AppContext } from './context';
+import { AttackSetup } from './screens/AttackSetup';
 import { DataScreen } from './screens/DataScreen';
 import { Install } from './screens/Install';
 import { Menu } from './screens/Menu';
@@ -17,6 +18,7 @@ const SCREENS: Record<ScreenName, () => preact.JSX.Element | null> = {
   settings: Settings,
   install: Install,
   shootoutSetup: ShootoutSetup,
+  attackSetup: AttackSetup,
   play: Play,
   shootoutResult: ShootoutResult,
 };

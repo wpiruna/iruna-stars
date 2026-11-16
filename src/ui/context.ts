@@ -4,6 +4,7 @@ import { useContext } from 'preact/hooks';
 import type { GameData } from '../data/load';
 import type { SaveStore } from '../persist/storage';
 import type { LabSettings } from '../sim/duel/lab';
+import type { AttackScenario } from './hud';
 
 export interface AppActions {
   /** First tap on the title screen: full screen, audio unlock, etc. */
@@ -16,6 +17,8 @@ export interface AppActions {
   /** Starts a penalty shoot-out against a rival, or the shooting lab. */
   startShootout(rivalId: string): void;
   startLab(): void;
+  /** Positional attack training against a rival (F2). */
+  startAttack(rivalId: string, scenario: AttackScenario): void;
   /** Leaves the game in progress and goes back to the menu. */
   exitPlay(): void;
   /** Plays the same mode again from the start. */

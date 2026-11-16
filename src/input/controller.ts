@@ -10,13 +10,15 @@ export interface SourceState {
   shot: boolean;
   skill: boolean;
   pause: boolean;
+  /** A finger is on the touch pad, even if it rests in the centre (only touch sets it). */
+  touching: boolean;
 }
 
 export interface ControllerState extends SourceState {
   device: InputDevice;
 }
 
-const emptyState = (): SourceState => ({ x: 0, y: 0, shot: false, skill: false, pause: false });
+const emptyState = (): SourceState => ({ x: 0, y: 0, shot: false, skill: false, pause: false, touching: false });
 
 // --- Keyboard ------------------------------------------------------------------------------------
 const KEYS = {
@@ -145,6 +147,7 @@ export class Controller {
     const out = this.merged;
     out.x = out.y = 0;
     out.shot = out.skill = out.pause = false;
+    out.touching = this.touch?.state.touching ?? false;
     let newest = -1;
     const sources: [SourceState, number, InputDevice][] = [
       [this.keyboard.state, this.keyboard.lastUsed, 'keyboard'],

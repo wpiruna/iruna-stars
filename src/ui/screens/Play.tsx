@@ -94,6 +94,42 @@ function TurnCard() {
   );
 }
 
+const ATTACK_HINT: Record<InputDevice, string> = {
+  touch: 'Pad: pasar · HABILIDAD + pad: entrada · TIRO: tirar · HABILIDAD sola: escapada / giro del boya',
+  keyboard: 'Flechas: pasar · J + flecha: entrada · K: tirar · J sola: escapada / giro del boya',
+  gamepad: 'Stick: pasar · X/□ + stick: entrada · A/✕: tirar · X/□ sola: escapada / giro del boya',
+};
+
+/** Attack training strip: shot clock, score of the session and a one-line reminder of the controls. */
+function AttackHud() {
+  const { attack, device } = useStore(hud);
+  if (!attack) return null;
+  const urgent = attack.clock <= 5;
+  return (
+    <>
+      <div class="scoreboard scoreboard--attack">
+        <div class="scoreboard__team">
+          <Shield id={attack.ours.id} code={attack.ours.code} image={attack.ours.shield} size={2.6} />
+          <span class="scoreboard__code">{attack.ours.code}</span>
+        </div>
+        <div class={`scoreboard__clock${urgent ? ' scoreboard__clock--urgent' : ''}`}>
+          <b>{attack.clock}</b>
+          <span>POSESIÓN</span>
+        </div>
+        <div class="scoreboard__team scoreboard__team--right">
+          <span class="scoreboard__code">{attack.rival.code}</span>
+          <Shield id={attack.rival.id} code={attack.rival.code} image={attack.rival.shield} size={2.6} />
+        </div>
+      </div>
+      <div class="attack-tally">
+        Ataque <b>{attack.attacks}</b> · <b>{attack.goals}</b> {attack.goals === 1 ? 'gol' : 'goles'} · <b>{attack.shots}</b>{' '}
+        {attack.shots === 1 ? 'tiro' : 'tiros'} · <b>{attack.turnovers}</b> {attack.turnovers === 1 ? 'pérdida' : 'pérdidas'}
+      </div>
+      <p class="attack-hint">{ATTACK_HINT[device]}</p>
+    </>
+  );
+}
+
 function Bar(props: { label: string; value: number; onChange(value: number): void }) {
   return (
     <label class="lab__bar">
@@ -173,7 +209,7 @@ function PauseMenu() {
           Continuar
         </button>
         <button class="btn" onClick={actions.restartPlay}>
-          {mode === 'lab' ? 'Reiniciar el laboratorio' : 'Empezar la tanda de nuevo'}
+          {mode === 'lab' ? 'Reiniciar el laboratorio' : mode === 'attack' ? 'Empezar de cero' : 'Empezar la tanda de nuevo'}
         </button>
         <button class="btn" onClick={actions.exitPlay}>
           Salir al menú
@@ -189,6 +225,7 @@ export function Play() {
   return (
     <section class="play">
       <Scoreboard />
+      <AttackHud />
       <Banner />
       <TurnCard />
       <LabPanel />

@@ -3,7 +3,16 @@ import type { InputDevice } from '../app/platform';
 import type { QualityLevel } from '../render/quality';
 import { createStore } from './store';
 
-export type ScreenName = 'title' | 'menu' | 'data' | 'settings' | 'install' | 'shootoutSetup' | 'play' | 'shootoutResult';
+export type ScreenName =
+  | 'title'
+  | 'menu'
+  | 'data'
+  | 'settings'
+  | 'install'
+  | 'shootoutSetup'
+  | 'attackSetup'
+  | 'play'
+  | 'shootoutResult';
 
 export interface DebugInfo {
   fps: number;

@@ -5,8 +5,8 @@ Juego arcade de waterpolo en 2D para móvil (y PC), protagonizado por el Waterpo
 
 Se trabaja por fases (GDD §21). Cada fase termina jugable, publicada y con su lista de pruebas en
 `docs/PRUEBAS/Fn.md`. **No se empieza la fase siguiente sin el visto bueno de Julián.**
-Fase actual: **F1 (tiro y portero) terminada y publicada**; pendiente del visto bueno de Julián para empezar F2
-(ataque posicional). F0 aprobada.
+Fase actual: **F2 (ataque posicional) terminada y publicada**; pendiente del visto bueno de Julián para empezar F3
+(transiciones, defensa del usuario y partido completo). F0 y F1 aprobadas.
 
 Publicado en <https://wpiruna.github.io/iruna-stars/> desde el repositorio público `wpiruna/iruna-stars`.
 Cada push a `main` convierte los datos, pasa los tests, compila y publica (`.github/workflows/publicar.yml`).
@@ -24,8 +24,9 @@ Cada push a `main` convierte los datos, pasa los tests, compila y publica (`.git
 | `npm run preview` | Sirve `dist/` en `http://localhost:4173/iruna-stars/`. |
 
 Depuración: `F3` o `º`, `?debug=1` en la dirección, o cinco toques sobre la línea de versión del menú.
-`?pantalla=datos&pestana=equipo` abre una pantalla directamente (`laboratorio`, `penaltis&rival=<id>`, `tanda`,
-`ajustes`…); `?carga=16` multiplica la escena de la portada.
+`?pantalla=datos&pestana=equipo` abre una pantalla directamente (`laboratorio`, `penaltis&rival=<id>`,
+`ataque&rival=<id>&escenario=completo|entradas|boya`, `tanda`, `entrenamiento`, `ajustes`…); `?carga=16` multiplica
+la escena de la portada.
 
 Para probar en el navegador sin pantalla: el service worker cachea la versión anterior, así que hay que
 saltárselo (DevTools: `Network.setBypassServiceWorker`) o se estará mirando un build viejo.
@@ -45,9 +46,13 @@ src/data/              schema.ts (zod, claves en castellano) → model.ts (tipos
 src/sim/field.ts        geometría y coordenadas (x a lo largo, y hacia abajo en pantalla, z altura)
 src/sim/shooting/      modelo puro de tiro y parada + trayectoria del balón
 src/sim/duel/          duelo lanzador–portero, IA del penalti, tanda y laboratorio
+src/sim/attack/        ataque posicional: drill.ts (orquesta), passing.ts (selector [FIJO] y riesgo), control.ts
+                       (gramática de controles), drive.ts (entradas), formation.ts, keeper.ts, movement.ts
 src/input/             mando virtual (teclado, mando, táctil) y reconocedor de gestos
-src/render/            agua (shader), piscina y porterías, cámara, jugadores, balón, efectos
-src/app/play.ts        sesión de juego: sim → eventos → imagen, sonido, vibración y HUD
+src/render/            agua (shader), piscina y porterías, cámara, jugadores, balón, efectos; attackview.ts
+                       dibuja el ataque (flecha de pase con color de riesgo, entradas, ¡LIBRE!)
+src/app/session.ts     interfaz común de lo que se juega; play.ts (tanda y laboratorio), attack.ts (entrenamiento)
+                       convierten eventos de la simulación en imagen, sonido, vibración y HUD
 src/audio/sfx.ts       efectos sintetizados con WebAudio
 src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/debug/
 ```
@@ -100,3 +105,6 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
 - F1 probada por Julián en móvil y teclado: el tiro, la barra, el portero y el pad flotante le gustan tal
   como están. No retocar `data/tuning.json` (tiro, portero, penalti) sin motivo.
 - En la tanda juega el portero real aunque tenga las barras vacías; el provisional solo si no hay ninguno.
+- Selector de pase: el aviso de riesgo y la tirada real usan el mismo cálculo (`passRisk`); hay un test que
+  comprueba que la frecuencia de intercepciones coincide con lo mostrado. No romper esa igualdad.
+- Entradas calibradas con una curva gradual (igualados ≈ 45 % ¡LIBRE!); nada garantizado ni imposible.

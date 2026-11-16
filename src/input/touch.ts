@@ -20,7 +20,7 @@ function el(className: string, text = ''): HTMLDivElement {
 }
 
 export class TouchControls implements TouchLike {
-  readonly state: SourceState = { x: 0, y: 0, shot: false, skill: false, pause: false };
+  readonly state: SourceState = { x: 0, y: 0, shot: false, skill: false, pause: false, touching: false };
   lastUsed = 0;
 
   private readonly root = el('controls');
@@ -79,6 +79,7 @@ export class TouchControls implements TouchLike {
   /** Releases everything, e.g. when the game is paused with a finger still down. */
   release(): void {
     this.padPointer = null;
+    this.state.touching = false;
     this.state.x = this.state.y = 0;
     this.state.shot = this.state.skill = false;
     this.knobX = this.knobY = 0;
@@ -117,6 +118,7 @@ export class TouchControls implements TouchLike {
     if (this.padPointer !== null) return;
     event.preventDefault();
     this.padPointer = event.pointerId;
+    this.state.touching = true;
     this.zone.setPointerCapture(event.pointerId);
     this.lastUsed = performance.now();
     if (this.fixed) {
@@ -142,6 +144,7 @@ export class TouchControls implements TouchLike {
   private padUp(event: PointerEvent): void {
     if (event.pointerId !== this.padPointer) return;
     this.padPointer = null;
+    this.state.touching = false;
     this.state.x = this.state.y = 0;
     this.knobX = this.knobY = 0;
     this.pad.classList.remove('pad--active');

@@ -1338,6 +1338,94 @@ kbd {
   border-radius: 0.9rem;
 }
 
+/* ---------------------------------------------------------- attack drill */
+.scoreboard__clock {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.2rem 1.1rem;
+  color: var(--ink);
+  background: var(--yellow);
+}
+.scoreboard__clock b {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 2.3rem;
+  line-height: 1;
+  min-width: 2.4rem;
+  text-align: center;
+}
+.scoreboard__clock span {
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+.scoreboard__clock--urgent {
+  color: #fff;
+  background: var(--red);
+  animation: blink 0.5s steps(2, jump-none) infinite;
+}
+.attack-tally {
+  position: absolute;
+  top: calc(0.9rem + var(--safe-t));
+  left: calc(1rem + var(--safe-l));
+  padding: 0.2rem 0.9rem;
+  font-size: 1.05rem;
+  white-space: nowrap;
+  background: rgb(4 17 42 / 0.7);
+  border-radius: 99rem;
+}
+.attack-tally b {
+  color: var(--yellow);
+}
+.attack-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(0.6rem + var(--safe-b));
+  transform: translateX(-50%);
+  max-width: 46rem;
+  margin: 0;
+  padding: 0.25rem 0.9rem;
+  font-size: 0.98rem;
+  text-align: center;
+  background: rgb(4 17 42 / 0.6);
+  border-radius: 0.4rem;
+  opacity: 0.85;
+}
+.scenarios {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.5rem 0 0.8rem;
+}
+.scenario {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.6rem 0.9rem;
+  text-align: left;
+  background: rgb(255 255 255 / 0.09);
+  border: 0.14rem solid transparent;
+  border-radius: 0.6rem;
+}
+.scenario strong {
+  font-weight: 800;
+  font-style: italic;
+  font-size: 1.3rem;
+  text-transform: uppercase;
+}
+.scenario span {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+.scenario--on {
+  border-color: var(--yellow);
+  background: rgb(255 210 63 / 0.15);
+}
+.setup--attack {
+  grid-template-columns: 22rem 1fr;
+}
+
 /* ------------------------------------------------------------------- lab */
 .lab {
   position: absolute;

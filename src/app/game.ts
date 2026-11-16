@@ -26,7 +26,12 @@ import {
   watchInputDevice,
   watchInstallPrompt,
 } from './platform';
+import { AttackSession } from './attack';
 import { DEFAULT_LAB_SETTINGS, PlaySession, type PlayRequest } from './play';
+import type { Session } from './session';
+import type { AttackScenario } from '../ui/hud';
+
+type Request = PlayRequest | { kind: 'attack'; rivalId: string; scenario: AttackScenario };
 
 export async function startGame(gameHost: HTMLElement, controlsHost: HTMLElement, uiHost: HTMLElement): Promise<void> {
   const data = loadGameData();
@@ -62,8 +67,8 @@ export async function startGame(gameHost: HTMLElement, controlsHost: HTMLElement
   });
 
   // --- Play session -----------------------------------------------------------------------------
-  let session: PlaySession | null = null;
-  let lastRequest: PlayRequest | null = null;
+  let session: Session | null = null;
+  let lastRequest: Request | null = null;
   let labSettings: LabSettings = DEFAULT_LAB_SETTINGS;
 
   const endSession = (): void => {
@@ -75,23 +80,19 @@ export async function startGame(gameHost: HTMLElement, controlsHost: HTMLElement
     touch.setVisible(false);
   };
 
-  const startSession = (request: PlayRequest): void => {
+  const startSession = (request: Request): void => {
     endSession();
     lastRequest = request;
     sfx.unlock();
     void keepAwake(true);
-    session = new PlaySession(
-      {
-        renderer: stage.app.renderer,
-        data,
-        save,
-        controller,
-        sfx,
-        onFinished: () => go('shootoutResult'),
-      },
-      request,
-      labSettings,
-    );
+    const renderer = stage.app.renderer;
+    if (request.kind === 'attack') {
+      const rival = data.rivals.find((team) => team.id === request.rivalId) ?? data.rivals[0];
+      if (!rival) return;
+      session = new AttackSession({ renderer, data, save, controller, sfx }, rival, request.scenario);
+    } else {
+      session = new PlaySession({ renderer, data, save, controller, sfx, onFinished: () => go('shootoutResult') }, request, labSettings);
+    }
     session.layout(stage.viewport.width, stage.viewport.height);
     stage.root.addChild(session.view);
     backdrop.view.visible = false;
@@ -135,6 +136,10 @@ export async function startGame(gameHost: HTMLElement, controlsHost: HTMLElement
       void enterImmersive();
       startSession({ kind: 'lab' });
     },
+    startAttack(rivalId, scenario) {
+      void enterImmersive();
+      startSession({ kind: 'attack', rivalId, scenario });
+    },
     exitPlay() {
       endSession();
       hud.set(emptyHud());
@@ -148,10 +153,10 @@ export async function startGame(gameHost: HTMLElement, controlsHost: HTMLElement
     },
     configureLab(settings) {
       labSettings = settings;
-      session?.configureLab(settings);
+      if (session instanceof PlaySession) session.configureLab(settings);
     },
     resetLabStats() {
-      session?.resetLabStats();
+      if (session instanceof PlaySession) session.resetLabStats();
     },
     click() {
       sfx.unlock();
@@ -182,9 +187,25 @@ export async function startGame(gameHost: HTMLElement, controlsHost: HTMLElement
   });
 
   if (DEBUG_AVAILABLE && debugRequestedByUrl()) ui.set({ debug: true });
-  const SCREEN_PARAM = { titulo: 'title', menu: 'menu', datos: 'data', ajustes: 'settings', instalar: 'install', tanda: 'shootoutSetup' } as const;
+  const SCREEN_PARAM = {
+    titulo: 'title',
+    menu: 'menu',
+    datos: 'data',
+    ajustes: 'settings',
+    instalar: 'install',
+    tanda: 'shootoutSetup',
+    entrenamiento: 'attackSetup',
+  } as const;
   const requested = debugParam('pantalla');
+  const scenario = debugParam('escenario');
   if (requested === 'laboratorio') startSession({ kind: 'lab' });
+  else if (requested === 'ataque') {
+    startSession({
+      kind: 'attack',
+      rivalId: debugParam('rival') ?? data.rivals[0]?.id ?? '',
+      scenario: scenario === 'entradas' || scenario === 'boya' ? scenario : 'completo',
+    });
+  }
   else if (requested === 'penaltis') startSession({ kind: 'shootout', rivalId: debugParam('rival') ?? data.rivals[0]?.id ?? '' });
   else if (requested && requested in SCREEN_PARAM) go(SCREEN_PARAM[requested as keyof typeof SCREEN_PARAM]);
   const requestedLoad = Number(debugParam('carga'));
