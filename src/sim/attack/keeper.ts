@@ -82,7 +82,8 @@ export class KeeperBody {
     this.place();
   }
 
-  private place(): void {
+  /** Puts the keeper's swimmer where the body is (after `u` was set from outside, e.g. a penalty duel). */
+  place(): void {
     const p = this.position;
     this.swimmer.prev.x = this.swimmer.pos.x;
     this.swimmer.prev.y = this.swimmer.pos.y;

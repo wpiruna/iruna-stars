@@ -195,7 +195,9 @@ describe('máquina de estados del partido', () => {
       const miss = until(match, (e) => e.type === 'outcome' && e.outcome.type === 'miss', 150).found;
       if (!miss || miss.type !== 'outcome') continue;
       const shooterTeam = match.possession!;
-      const throwIn = until(match, (e) => e.type === 'setPiece', 3).found;
+      const throwIn = until(match, (e) => e.type === 'setPiece' || e.type === 'foul', 3).found;
+      // A foul on the shooter held back for the advantage is whistled after the miss: not this case.
+      if (throwIn?.type === 'foul') continue;
       expect(throwIn).toMatchObject({ type: 'setPiece', kind: 'goalThrow', side: 1 - shooterTeam });
       expect(match.ball.holder?.keeper).toBe(true);
       const pass = until(match, (e) => e.type === 'pass', 5).found;
@@ -323,5 +325,182 @@ describe('laboratorio de contraataque', () => {
     expect(types(events)).toContain('advantage');
     expect(lab.counterAttempts).toBeGreaterThan(1);
     expect(lab.period).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// F4: the referee in the match
+// ---------------------------------------------------------------------------------------------
+
+/** Plays until there is a set attack, with a field player holding the ball. */
+function setAttack(match: Match, team: 0 | 1 | null = null, maxSeconds = 60): boolean {
+  for (let s = 0; s < maxSeconds * 60; s++) {
+    // Our human player swims the ball up (we attack to the right); the AI does the rest.
+    const carrying = match.padMode === 'swim';
+    match.step(carrying ? { ...NEUTRAL, x: 1, touching: true } : NEUTRAL);
+    const h = match.ball.holder;
+    if (match.phase === 'positional' && h && !h.keeper && (team === null || h.team === team)) {
+      runMatch(match, {}, 3);
+      if (match.ball.holder === h) return true;
+    }
+  }
+  return false;
+}
+
+describe('árbitro en el partido', () => {
+  it('exclusión: 6x5 con 4-2, el excluido nada a su zona y vuelve cuando toca', () => {
+    const match = makeMatch({ seed: 'exclusion' });
+    expect(setAttack(match)).toBe(true);
+    const att = match.possession as 0 | 1;
+    const def = (1 - att) as 0 | 1;
+    const victim = match.inPlay(att).find((a) => a !== match.ball.holder)!;
+    const by = match.defenderOf(victim) ?? match.inPlay(def)[0]!;
+    const events = match.forceCall(by, victim, 'exclusion', 'AGARRÓN');
+    expect(events.find((e) => e.type === 'foul')).toMatchObject({ sanction: 'exclusion', motive: 'AGARRÓN', personal: 1, out: false, awarded: att });
+    expect(match.inPlay(def)).toHaveLength(5);
+    expect(match.exclusions).toHaveLength(1);
+    expect(by.excluded).toBe(true);
+    expect(match.phase).toBe('setPiece');
+    expect(match.shotClock).toBeGreaterThanOrEqual(18);
+    // After the whistle: superiority in the 4-2, no centre fight.
+    until(match, (e) => e.type === 'phase' && e.phase === 'positional', 5);
+    expect(match.shapeOf(att)).toBe('4-2');
+    expect(match.boya).toBeNull();
+    const start = { ...by.pos };
+    const back = until(match, (e) => e.type === 'exclusionEnd' || e.type === 'goal', 40);
+    expect(back.found).not.toBeNull();
+    if (back.found?.type === 'exclusionEnd') {
+      expect(back.found.who).toBe(by);
+      // He came back from his re-entry area, by his own goal line, at the side of the pool.
+      expect(by.pos.y).toBeLessThan(3.5);
+      expect(Math.hypot(by.pos.x - start.x, by.pos.y - start.y)).toBeGreaterThan(1);
+    }
+    runMatch(match, {}, 30);
+    expect(match.inPlay(def)).toHaveLength(6);
+    expect(by.excluded).toBe(false);
+  });
+
+  it('si el equipo del excluido recupera el balón, puede volver antes de tiempo', () => {
+    const match = makeMatch({ seed: 'vuelve' });
+    expect(setAttack(match)).toBe(true);
+    const att = match.possession as 0 | 1;
+    const def = (1 - att) as 0 | 1;
+    const by = match.inPlay(def)[0]!;
+    match.forceCall(by, match.ball.holder, 'exclusion');
+    const ex = match.exclusions[0]!;
+    expect(ex.canReturn).toBe(false);
+    // An offensive foul gives the ball to the short team: the way back opens at once.
+    match.forceCall(match.inPlay(att)[0]!, by, 'ordinary', 'EMPUJÓN');
+    expect(match.possession).toBe(def);
+    expect(ex.canReturn).toBe(true);
+    expect(ex.left).toBeGreaterThan(10);
+  });
+
+  it('tercera falta personal: ¡EXPULSADO! para todo el partido y entra un suplente', () => {
+    const match = makeMatch({ seed: 'personales' });
+    expect(setAttack(match)).toBe(true);
+    const def = (1 - (match.possession as number)) as 0 | 1;
+    const by = match.inPlay(def)[0]!;
+    const bench = match.benchOf(def).length;
+    match.personal.set(by, 2);
+    const events = match.forceCall(by, match.ball.holder, 'exclusion', 'HUNDIR');
+    expect(events.find((e) => e.type === 'foul')).toMatchObject({ personal: 3, out: true });
+    const sub = until(match, (e) => e.type === 'substitution', 40).found;
+    expect(sub).toMatchObject({ type: 'substitution', out: by });
+    runMatch(match, {}, 60 * 12);
+    expect(by.away).toBe(true);
+    expect(match.inPlay(def)).not.toContain(by);
+    expect(match.inPlay(def)).toHaveLength(6);
+    expect(match.benchOf(def)).toHaveLength(bench - 1);
+  });
+
+  it('penalti: el mejor lanzador desde 5 m, todos los demás fuera de los 6 m, y el balón vuelve al juego', () => {
+    const match = makeMatch({ seed: 'penalti' });
+    expect(setAttack(match)).toBe(true);
+    const att = match.possession as 0 | 1;
+    const def = (1 - att) as 0 | 1;
+    const events = match.forceCall(match.inPlay(def)[0]!, match.ball.holder, 'penalty', 'POR DETRÁS');
+    expect(types(events)).toContain('penalty');
+    expect(match.phase).toBe('penalty');
+    const goal = match.goalOf(att);
+    const shooter = match.ball.holder!;
+    expect(Math.abs(Math.abs(shooter.pos.x - goal.x) - 5)).toBeLessThan(0.01);
+    for (const s of [...match.inPlay(0), ...match.inPlay(1)]) {
+      if (s === shooter) continue;
+      expect(Math.abs(s.pos.x - goal.x)).toBeGreaterThan(6);
+      expect(Math.hypot(s.pos.x - shooter.pos.x, s.pos.y - shooter.pos.y)).toBeGreaterThanOrEqual(3);
+    }
+    const after = until(match, (e) => e.type === 'phase' && e.previous === 'penalty', 15);
+    expect(after.found).not.toBeNull();
+    expect(types(after.events)).toEqual(expect.arrayContaining(['whistle', 'release', 'outcome']));
+    expect(match.stats[att].shots).toBeGreaterThan(0);
+  });
+
+  it('penalti nuestro: un TIRO pulsado desde antes no cuenta; pulsar y soltar después, sí', () => {
+    const match = makeMatch({ seed: 'penalti-humano', human: true, home: { speed: 10, skill: 10 }, away: { speed: 1 } });
+    expect(setAttack(match, 0)).toBe(true);
+    match.forceCall(match.inPlay(1)[0]!, match.ball.holder, 'penalty', 'GOL CLARO');
+    expect(match.phase).toBe('penalty');
+    // Held from before the whistle: nothing happens.
+    const held = runMatch(match, { shot: true }, 60 * 3);
+    expect(types(held)).not.toContain('chargeStart');
+    expect(match.padMode).toBe('shoot');
+    runMatch(match, {}, 5);
+    const shot = [...runMatch(match, { shot: true }, 40), ...runMatch(match, {}, 120)];
+    expect(types(shot)).toEqual(expect.arrayContaining(['chargeStart', 'release', 'outcome']));
+  });
+
+  it('falta dentro de los 6 m: hay que pasar; fuera de los 6 m se puede tirar directo', () => {
+    for (const [distance, direct] of [
+      [4.5, false],
+      [7.5, true],
+    ] as const) {
+      const match = makeMatch({ seed: `libre-${distance}`, human: true, home: { speed: 10, skill: 10 }, away: { speed: 1 } });
+      expect(setAttack(match, 0)).toBe(true);
+      const holder = match.ball.holder!;
+      const goal = match.goalOf(0);
+      holder.pos = { x: goal.x - goal.facing * distance, y: goal.y + 1 };
+      match.ball.pos = { x: holder.pos.x, y: holder.pos.y, z: 0.3 };
+      match.forceCall(match.inPlay(1)[0]!, holder, 'ordinary', 'FALTA');
+      expect(match.phase).toBe('setPiece');
+      until(match, (e) => e.type === 'phase' && e.phase === 'positional', 3);
+      runMatch(match, {}, 2);
+      const events = [...runMatch(match, { shot: true }, 6), ...runMatch(match, {}, 2)];
+      if (direct) expect(types(events)).toContain('chargeStart');
+      else {
+        expect(types(events)).toContain('mustPass');
+        expect(types(events)).not.toContain('chargeStart');
+      }
+    }
+  });
+
+  it('IA contra IA: con un árbitro estricto hay más exclusiones que con uno permisivo', { timeout: 120_000 }, () => {
+    const exclusions = (referee: { contactTolerance: number; exclusionTendency: number }) => {
+      let total = 0;
+      for (let i = 0; i < 3; i++) {
+        const match = makeMatch({ seed: `arbitro-${i}`, periods: 2, periodSeconds: 240, referee, home: { aggression: 8 }, away: { aggression: 8 } });
+        let steps = 0;
+        while (match.phase !== 'fullTime' && steps < 60 * 60 * 6) {
+          match.step(NEUTRAL);
+          steps++;
+        }
+        expect(match.phase).toBe('fullTime');
+        total += match.stats[0].exclusions + match.stats[1].exclusions;
+      }
+      return total;
+    };
+    const strict = exclusions({ contactTolerance: 2, exclusionTendency: 8 });
+    const loose = exclusions({ contactTolerance: 9, exclusionTendency: 3 });
+    expect(strict).toBeGreaterThan(loose);
+    expect(strict).toBeGreaterThan(3);
+  });
+
+  it('laboratorio de superioridad: 6 contra 5 una y otra vez', () => {
+    const match = makeMatch({ seed: 'lab-6x5', manUp: 'attack' });
+    expect(match.inPlay(0)).toHaveLength(6);
+    expect(match.inPlay(1)).toHaveLength(5);
+    runMatch(match, {}, 60 * 40);
+    expect(match.counterAttempts).toBeGreaterThan(1);
+    expect(match.period).toBe(1);
   });
 });

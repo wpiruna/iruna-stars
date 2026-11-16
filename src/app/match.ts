@@ -1,12 +1,13 @@
 /**
- * A full match on screen (F3): builds the Match from the squads, feeds it the controller each
- * fixed step, moves the camera with the play and turns events into picture, sound and HUD.
+ * A full match on screen (F3–F4): builds the Match from the squads, feeds it the controller each
+ * fixed step, moves the camera with the play and turns events into picture, sound and HUD: the
+ * referee's calls with their reason, exclusions with their countdown, penalties and substitutes.
  */
 import type { Renderer } from 'pixi.js';
 import type { Sfx } from '../audio/sfx';
 import { Rng } from '../core/rng';
 import { pickPhrase, type GameData } from '../data/load';
-import type { Team } from '../data/model';
+import type { Player, Referee, Team } from '../data/model';
 import type { Controller } from '../input/controller';
 import type { SaveStore } from '../persist/storage';
 import { TILT, type Camera } from '../render/camera';
@@ -18,15 +19,28 @@ import type { Slot } from '../sim/attack/types';
 import { pickKeeper } from '../sim/duel/shootout';
 import { fieldFromRules } from '../sim/field';
 import { Match } from '../sim/match/match';
+import type { Swimmer } from '../sim/attack/types';
 import type { MatchEvent } from '../sim/match/types';
 import { emptyHud, hud, type BannerTone } from '../ui/hud';
 import { frameAttack } from './attack';
 import { vibrate } from './platform';
-import type { Session } from './session';
+import type { DebugCall, Session } from './session';
 import { debugParam } from '../debug/config';
 
 const SLOTS: Slot[] = ['boya', 'extremoIzq', 'extremoDer', 'lateralIzq', 'lateralDer', 'cierre'];
 const ORDINAL = ['', '1.er', '2.º', '3.er', '4.º', '5.º', '6.º'];
+const NTH = ['', '1.ª', '2.ª', '3.ª', '4.ª', '5.ª'];
+
+export interface MatchOptions {
+  /** Counter-attack lab instead of a match. */
+  counter?: { attackers: number; defenders: number };
+  /** Man-up lab: we attack 6x5 or defend 5x6. */
+  manUp?: 'attack' | 'defend';
+  /** Referee of a friendly; null or missing = drawn at random. */
+  refereeId?: string | null;
+}
+
+const who = (s: Swimmer): string => `Nº ${s.player.number} ${s.player.nickname.toUpperCase()}`;
 
 export interface MatchDeps {
   renderer: Renderer;
@@ -50,27 +64,47 @@ export class MatchSession implements Session {
   private lastSnapshot = '';
   private finishTimer = -1;
   private readonly rng: Rng;
+  readonly counter: { attackers: number; defenders: number } | null;
+  readonly manUp: 'attack' | 'defend' | null;
+  readonly referee: Referee | null;
+  /** What the exclusion tags in the water last said, so they are only redrawn when they change. */
+  private readonly tags = new Map<Swimmer, string>();
 
   constructor(
     private readonly deps: MatchDeps,
     readonly rival: Team,
-    /** Counter-attack lab instead of a match. */
-    readonly counter: { attackers: number; defenders: number } | null = null,
+    options: MatchOptions = {},
   ) {
     const { data, save } = deps;
+    const counter = options.counter ?? null;
+    this.counter = counter;
+    this.manUp = options.manUp ?? null;
     this.seed = (Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0;
     this.rng = new Rng(this.seed);
     const field = fieldFromRules(data.rules);
     const ours = data.ourTeam;
     const ourField = [...pickLineup(ours.players, SLOTS).keys()];
     const rivalField = [...pickLineup(rival.players, SLOTS).keys()];
+    const bench = (team: Team, lineup: Player[]): Player[] =>
+      team.players.filter((p) => p.position !== 'goalkeeper' && !lineup.includes(p)).slice(0, data.rules.convocatoria.suplentes);
+    // The friendly's referee, or one at random; in the labs a neutral one.
+    const lab = counter !== null || this.manUp !== null;
+    const referee =
+      data.referees.find((r) => r.id === options.refereeId) ??
+      (lab ? (data.referees.find((r) => r.bias === 0) ?? data.referees[0]) : data.referees[Math.floor(this.rng.next() * data.referees.length)]) ??
+      null;
+    this.referee = referee;
     this.match = new Match({
       field,
       formations: data.formations,
       sides: [
-        { team: ours, field: counter ? ourField.slice(0, counter.attackers) : ourField, keeper: pickKeeper(ours), human: true },
-        { team: rival, field: counter ? rivalField.slice(0, counter.defenders) : rivalField, keeper: pickKeeper(rival), human: false },
+        { team: ours, field: counter ? ourField.slice(0, counter.attackers) : ourField, bench: counter ? [] : bench(ours, ourField), keeper: pickKeeper(ours), human: true },
+        { team: rival, field: counter ? rivalField.slice(0, counter.defenders) : rivalField, bench: counter ? [] : bench(rival, rivalField), keeper: pickKeeper(rival), human: false },
       ],
+      rules: data.rules,
+      referee: referee ?? { contactTolerance: 5, exclusionTendency: 5, cardTendency: 5, bias: 0, consistency: 8 },
+      refereeTuning: data.tuning.arbitro,
+      penalty: data.tuning.penalti,
       periods: data.rules.partido.periodos,
       // `?minutos=1` shortens the periods for testing (debug builds only).
       periodSeconds: (Number(debugParam('minutos')) || data.rules.partido.minutosMarcador) * 60,
@@ -90,6 +124,7 @@ export class MatchSession implements Session {
       tapMs: data.tuning.controles.umbralToqueMs.teclado,
       autoSwitch: save.settings.autoSwitchDefender,
       ...(counter ? { counter } : {}),
+      ...(this.manUp ? { manUp: this.manUp } : {}),
     });
     this.playView = new PlayView(
       deps.renderer,
@@ -122,10 +157,30 @@ export class MatchSession implements Session {
         possession: null,
         padMode: 'none',
         phase: 'swimOffReady',
+        manUp: null,
+        referee: referee?.name ?? '',
         stats: null,
       },
     });
-    if (counter) {
+    if (this.manUp) {
+      const defending = this.manUp === 'defend';
+      hud.set({
+        mode: 'attack',
+        match: null,
+        attack: {
+          scenario: defending ? 'inferioridad' : 'superioridad',
+          clock: Math.ceil(this.match.shotClock),
+          attacks: this.match.counterAttempts,
+          goals: 0,
+          shots: 0,
+          turnovers: 0,
+          defending,
+          ours: { id: ours.id, code: ours.code, ...(ours.shield ? { shield: ours.shield } : {}) },
+          rival: { id: rival.id, code: rival.code, name: rival.name, ...(rival.shield ? { shield: rival.shield } : {}) },
+        },
+      });
+      this.banner(defending ? '¡INFERIORIDAD!' : '¡SUPERIORIDAD!', defending ? 'bad' : 'great', defending ? 'Cinco contra seis: aguanta 18 segundos' : 'Seis contra cinco: mueve rápido y busca al libre');
+    } else if (counter) {
       hud.set({
         mode: 'attack',
         match: null,
@@ -142,7 +197,7 @@ export class MatchSession implements Session {
       });
       this.banner(`¡CONTRA ${counter.attackers}x${counter.defenders}!`, 'great', 'Nada con el balón y pasa al que quede libre');
     } else {
-      this.banner(`${ORDINAL[1]} PERIODO`, 'neutral', `${ours.code} – ${rival.code}`);
+      this.banner(`${ORDINAL[1]} PERIODO`, 'neutral', `${ours.code} – ${rival.code}${referee ? ` · Árbitro: ${referee.name}` : ''}`);
     }
   }
 
@@ -157,11 +212,18 @@ export class MatchSession implements Session {
         if (att) frameAttack(camera, att.attacks, ball.y, snap);
         return;
       case 'setPiece':
-        if (att && m.setPiece?.kind === 'corner') {
+        if (att && (m.setPiece?.kind === 'corner' || m.setPiece?.resume === 'positional')) {
           frameAttack(camera, att.attacks, ball.y, snap);
           return;
         }
         break;
+      case 'penalty': {
+        // Shooter on the 5 m and the goal, like a goal replay.
+        const goal = m.goalOf(m.penalty?.side ?? m.possession ?? 0);
+        const fit = camera.fit(Math.min(goal.x, goal.x - goal.facing * 8), Math.max(goal.x, goal.x - goal.facing * 8) + BEHIND_GOAL * 0.5, 4, 16, 90);
+        camera.frame({ x: goal.x - goal.facing * 3.4, y: 10, ppm: fit.ppm }, snap);
+        return;
+      }
       case 'goal': {
         const goal = m.goalOf(m.score[0] + m.score[1] > 0 ? (m.lastScorer?.team ?? 0) : 0);
         const fit = camera.fit(Math.min(goal.x, goal.x - goal.facing * 7), Math.max(goal.x, goal.x - goal.facing * 7) + BEHIND_GOAL * 0.5, 4, 16, 90);
@@ -232,28 +294,87 @@ export class MatchSession implements Session {
     const holder = h ? `${h.team === 0 ? 'nuestro' : 'rival'} ${h.player.number}${h.keeper ? ' (portero)' : ''}` : (m.ball.flight?.kind ?? (m.ball.free ? 'suelto' : '—'));
     const adv = m.advantage ? ` · ${m.advantage.attackers}x${m.advantage.defenders}` : '';
     const sel = m.selected ? ` · defiendes con el ${m.selected.player.number}` : '';
+    const ref = m.referee;
+    const refLine = ` · árbitro día ${ref.day >= 0 ? '+' : ''}${ref.day.toFixed(2)}`;
+    const out = m.exclusions.map((e) => `${e.swimmer.team === 0 ? 'n' : 'r'}${e.swimmer.player.number}:${Math.ceil(e.left)}`).join(' ');
     const preview = m.preview?.candidates
       .slice(0, 3)
       .map((c) => `${c.receiver.player.number}:${c.score.toFixed(2)} r${c.risk.toFixed(2)}`)
       .join(' | ');
-    return `${m.phase} · pad ${m.padMode} · balón ${holder}${adv}${sel}${preview ? ` · pase ${preview}` : ''}`;
+    return `${m.phase} · pad ${m.padMode} · balón ${holder}${adv}${sel}${out ? ` · fuera ${out}` : ''}${refLine}${preview ? ` · pase ${preview}` : ''}`;
+  }
+
+  /** Debug layer: the referee whistles something now (if the ball is in play). */
+  debugCall(kind: DebugCall): void {
+    const m = this.match;
+    if (m.phase !== 'transition' && m.phase !== 'positional') return;
+    const offenderTeam = kind === 'exclusionRival' || kind === 'penaltyFor' ? 1 : 0;
+    const victims = m.inPlay((1 - offenderTeam) as 0 | 1);
+    const holder = m.ball.holder;
+    const on = holder && holder.team !== offenderTeam && !holder.keeper ? holder : (victims[0] ?? null);
+    const by = (on ? m.defenderOf(on) : null) ?? m.inPlay(offenderTeam)[0];
+    if (!by) return;
+    const penalty = kind === 'penaltyFor' || kind === 'penaltyAgainst';
+    for (const event of m.forceCall(by, on, penalty ? 'penalty' : 'exclusion', penalty ? 'GOL CLARO' : 'AGARRÓN')) this.handle(event);
   }
 
   private banner(text: string, tone: BannerTone, detail?: string): void {
     hud.set({ banner: { id: ++this.bannerId, text, tone, ...(detail ? { detail } : {}) } });
   }
 
+  /** Over each excluded player, the seconds he has left (or FUERA if he is gone for good). */
+  private refreshTags(): void {
+    const m = this.match;
+    const seen = new Set<Swimmer>();
+    for (const ex of m.exclusions) {
+      const s = ex.swimmer;
+      seen.add(s);
+      const text = ex.forGame ? 'FUERA' : ex.canReturn ? '¡VUELVE!' : String(Math.ceil(ex.left));
+      if (this.tags.get(s) === text) continue;
+      this.tags.set(s, text);
+      this.playView.tag(s, text, s.team === 0 ? 0xff8b8b : 0xffd23f);
+    }
+    for (const s of [...this.tags.keys()]) {
+      if (seen.has(s)) continue;
+      this.tags.delete(s);
+      this.playView.tag(s, null);
+    }
+  }
+
+  /** A man more or less right now, for the chip under the scoreboard. */
+  private manUpState(): { ours: boolean; count: string; seconds: number } | null {
+    const m = this.match;
+    const ours = m.inPlay(0).length;
+    const theirs = m.inPlay(1).length;
+    if (ours === theirs) return null;
+    const short = ours < theirs ? 0 : 1;
+    const left = m.exclusions.filter((e) => e.swimmer.team === short && !e.forGame).map((e) => e.left);
+    const seconds = left.length > 0 ? Math.ceil(Math.min(...left)) : 0;
+    // Always from our side: 6x5 with a man more, 5x6 with one less.
+    return { ours: short === 1, count: `${ours}x${theirs}`, seconds };
+  }
+
   private refreshHud(): void {
     const m = this.match;
+    this.refreshTags();
     const lab = hud.get().attack;
-    if (this.counter && lab) {
-      const next = { ...lab, clock: Math.ceil(m.shotClock), attacks: m.counterAttempts, goals: m.score[0], shots: m.stats[0].shots, turnovers: m.stats[0].turnovers };
+    if ((this.counter || this.manUp) && lab) {
+      const them = this.manUp === 'defend';
+      const next = {
+        ...lab,
+        clock: Math.ceil(m.shotClock),
+        attacks: m.counterAttempts,
+        goals: m.score[them ? 1 : 0],
+        shots: m.stats[them ? 1 : 0].shots,
+        turnovers: m.stats[them ? 1 : 0].turnovers,
+      };
       if (JSON.stringify(next) !== JSON.stringify(lab)) hud.set({ attack: next });
       return;
     }
     const state = hud.get().match;
     if (!state) return;
-    const snapshot = `${m.score.join('-')}|${m.period}|${Math.ceil(m.clock)}|${Math.ceil(m.shotClock)}|${m.possession}|${m.padMode}|${m.phase}`;
+    const manUp = this.manUpState();
+    const snapshot = `${m.score.join('-')}|${m.period}|${Math.ceil(m.clock)}|${Math.ceil(m.shotClock)}|${m.possession}|${m.padMode}|${m.phase}|${JSON.stringify(manUp)}`;
     if (snapshot === this.lastSnapshot) return;
     this.lastSnapshot = snapshot;
     hud.set({
@@ -266,6 +387,7 @@ export class MatchSession implements Session {
         possession: m.possession,
         padMode: m.padMode,
         phase: m.phase,
+        manUp,
       },
     });
   }
@@ -306,7 +428,34 @@ export class MatchSession implements Session {
         break;
       case 'setPiece':
         if (event.kind === 'corner') this.banner('CÓRNER', 'neutral');
-        else if (event.kind === 'freeThrow') this.banner('¡POSESIÓN!', event.side === 0 ? 'great' : 'bad', 'Se acabaron los segundos');
+        else if (event.kind === 'freeThrow' && event.reason === 'clock') this.banner('¡POSESIÓN!', event.side === 0 ? 'great' : 'bad', 'Se acabaron los segundos');
+        break;
+      case 'foul':
+        this.onFoul(event);
+        break;
+      case 'heldCall':
+        this.playView.caption('VENTAJA', 0xffd23f, event.on.pos, 1.1);
+        break;
+      case 'advantagePlayed':
+        this.playView.caption('¡VENTAJA BIEN JUGADA!', 0xffd23f, event.on.pos, 1.2);
+        break;
+      case 'exclusionEnd':
+        this.playView.caption(event.reason === 'time' ? '¡VUELVE!' : event.reason === 'goal' ? 'VUELVE TRAS EL GOL' : '¡VUELVE!', 0x7fd3ff, event.who.pos, 1.2);
+        sfx.play('click');
+        break;
+      case 'substitution':
+        this.banner('CAMBIO', event.in.team === 0 ? 'neutral' : 'neutral', `Sale el ${event.out.player.number} · entra ${who(event.in)}`);
+        break;
+      case 'rotation':
+        this.playView.caption(event.shape, 0x7fd3ff, m.ball.pos, 0.9);
+        sfx.play('click');
+        break;
+      case 'mustPass':
+        this.playView.caption('¡PASA!', 0xff8b8b, event.who.pos, 0.9);
+        sfx.play('click');
+        break;
+      case 'penalty':
+        if (save.settings.vibration) vibrate([20, 30, 20]);
         break;
       case 'periodEnd': {
         const half = event.period === m.setup.periods / 2;
@@ -359,6 +508,37 @@ export class MatchSession implements Session {
       default:
         break;
     }
+  }
+
+  /** The referee's call: a caption with the reason, and a banner for the ones that matter. */
+  private onFoul(event: Extract<MatchEvent, { type: 'foul' }>): void {
+    const { sfx, save } = this.deps;
+    const ours = event.by.team === 0;
+    const tone = ours ? 'bad' : 'great';
+    const personal = event.personal > 0 ? ` · ${NTH[event.personal] ?? `${event.personal}.ª`} falta` : '';
+    // The reason, where the foul was made (the offender carries his countdown).
+    const at = event.on?.pos ?? event.by.pos;
+    this.playView.caption(event.motive, ours ? 0xff8b8b : 0xffd23f, { x: at.x, y: at.y - 0.6 }, 1.3);
+    if (event.sanction === 'violent') {
+      this.banner('¡ROJA DIRECTA!', tone, `${who(event.by)} · ${event.motive} · penalti y 4 minutos sin sustituto`);
+    } else if (event.out && event.card === 'red') {
+      this.banner('TARJETA ROJA', tone, `${who(event.by)} · fuera todo el partido`);
+    } else if (event.out) {
+      this.banner('¡EXPULSADO!', tone, `${who(event.by)} · ${event.personal} faltas personales: entra un suplente`);
+    } else if (event.sanction === 'penalty') {
+      this.banner('¡PENALTI!', tone, `${event.motive} · ${who(event.by)}${personal}`);
+    } else if (event.sanction === 'exclusion') {
+      const card = event.card === 'yellow' ? ' · AMARILLA' : '';
+      this.banner(event.motive, tone, `Exclusión de ${who(event.by)}${personal}${card} · ${ours ? '¡INFERIORIDAD!' : '¡SUPERIORIDAD!'}`);
+      if (ours && save.settings.vibration) vibrate(40);
+    } else if (event.card === 'yellow') {
+      this.banner('TARJETA AMARILLA', tone, `${who(event.by)} · ${event.motive}: la próxima es roja`);
+    } else if (event.motive !== 'FALTA') {
+      // Offensive foul or goal area: the ball changes hands.
+      this.banner(event.motive, tone, ours ? 'Falta en ataque: balón para ellos' : 'Falta en ataque: balón nuestro');
+    }
+    if (event.teamWarning) this.banner('AMARILLA AL EQUIPO', tone, 'Demasiadas faltas: la próxima fuerte será roja');
+    sfx.play(event.sanction === 'ordinary' ? 'click' : ours ? 'groan' : 'cheer', event.sanction === 'ordinary' ? 0.4 : 0.6);
   }
 
   private finish(): void {

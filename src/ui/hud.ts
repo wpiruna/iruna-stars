@@ -13,7 +13,7 @@ export interface HudTeam {
 
 export type BannerTone = 'great' | 'bad' | 'neutral';
 
-export type AttackScenario = 'completo' | 'entradas' | 'boya' | 'contra2x1' | 'contra3x2';
+export type AttackScenario = 'completo' | 'entradas' | 'boya' | 'contra2x1' | 'contra3x2' | 'superioridad' | 'inferioridad';
 
 export interface HudAttack {
   scenario: AttackScenario;
@@ -23,6 +23,8 @@ export interface HudAttack {
   goals: number;
   shots: number;
   turnovers: number;
+  /** We defend in this drill: the tally counts the rival's attacks. */
+  defending?: boolean;
   /** Team names for the strip at the top. */
   ours: { id: string; code: string; shield?: string };
   rival: { id: string; code: string; shield?: string; name: string };
@@ -44,6 +46,13 @@ export interface HudMatchStats {
   turnovers: number;
   counterattacks: number;
   possession: number;
+  fouls: number;
+  exclusions: number;
+  penalties: number;
+  manUp: number;
+  manUpGoals: number;
+  yellows: number;
+  reds: number;
 }
 
 export interface HudMatch {
@@ -57,8 +66,11 @@ export interface HudMatch {
   shotClock: number;
   /** Team with the ball: 0 = us. */
   possession: 0 | 1 | null;
-  padMode: 'none' | 'sprint' | 'pass' | 'swim' | 'defend' | 'keeper';
+  padMode: 'none' | 'sprint' | 'pass' | 'swim' | 'defend' | 'keeper' | 'shoot' | 'save';
   phase: string;
+  /** A man more or less right now: who has it, the count and the seconds of the exclusion. */
+  manUp: { ours: boolean; count: string; seconds: number } | null;
+  referee: string;
   /** Filled in at the final whistle. */
   stats: [HudMatchStats, HudMatchStats] | null;
 }

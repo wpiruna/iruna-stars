@@ -5,8 +5,8 @@ Juego arcade de waterpolo en 2D para móvil (y PC), protagonizado por el Waterpo
 
 Se trabaja por fases (GDD §21). Cada fase termina jugable, publicada y con su lista de pruebas en
 `docs/PRUEBAS/Fn.md`. **No se empieza la fase siguiente sin el visto bueno de Julián.**
-Fase actual: **F3 (partido completo) terminada y publicada**; pendiente del visto bueno de Julián para empezar F4
-(reglas y árbitro). F0, F1 y F2 aprobadas.
+Fase actual: **F4 (reglas y árbitro) terminada y publicada**; pendiente del visto bueno de Julián para empezar F5
+(nuestros jugadores: estadísticas, energía, banquillo y cambios). F0, F1, F2 y F3 aprobadas.
 
 Publicado en <https://wpiruna.github.io/iruna-stars/> desde el repositorio público `wpiruna/iruna-stars`.
 Cada push a `main` convierte los datos, pasa los tests, compila y publica (`.github/workflows/publicar.yml`).
@@ -19,15 +19,17 @@ Cada push a `main` convierte los datos, pasa los tests, compila y publica (`.git
 | `npm run datos` | Hoja + `assets/` → JSON de `data/`, imágenes optimizadas, iconos e `INFORME_DATOS.md`. |
 | `npm run rivales -- --regenerar <id>` | Rehace la plantilla guardada de un rival (`--todos` para todas). |
 | `npm test` | Vitest. |
-| `npm run sim -- partidos=200` | Partidos IA contra IA sin pantalla: comprueba que terminan y da el equilibrio (goles, tiros, pérdidas, tiempo por fase). |
+| `npm run sim -- partidos=200` | Partidos IA contra IA sin pantalla: comprueba que terminan y da el equilibrio (goles, tiros, pérdidas, tiempo por fase, faltas, exclusiones, penaltis, tarjetas y cifras por árbitro; `arbitro=<id>` fija uno). |
 | `npm run typecheck` | `tsc --noEmit`. |
 | `npm run build` | datos → tipos → web (`dist/`) → HTML único (`dist/waterpolo.html`) → control de peso. |
 | `npm run preview` | Sirve `dist/` en `http://localhost:4173/iruna-stars/`. |
 
 Depuración: `F3` o `º`, `?debug=1` en la dirección, o cinco toques sobre la línea de versión del menú.
 `?pantalla=datos&pestana=equipo` abre una pantalla directamente (`laboratorio`, `penaltis&rival=<id>`,
-`ataque&rival=<id>&escenario=completo|entradas|boya|contra2x1|contra3x2`, `partido&rival=<id>&minutos=1`, `tanda`,
-`entrenamiento`, `amistoso`, `ajustes`…); `?carga=16` multiplica la escena de la portada.
+`ataque&rival=<id>&escenario=completo|entradas|boya|contra2x1|contra3x2|superioridad|inferioridad`,
+`partido&rival=<id>&arbitro=<id>&minutos=1`, `tanda`, `entrenamiento`, `amistoso`, `ajustes`…); `?carga=16` multiplica
+la escena de la portada. En un partido, la capa de depuración tiene la fila *Árbitro* (excluir rival o nuestro, penalti
+a favor o en contra) para probar sin esperar.
 
 Al parar servidores de prueba no usar `pkill -f` con un patrón que también aparezca en la misma orden: se mata a sí
 misma. Mejor `kill` con el número de proceso.
@@ -55,8 +57,12 @@ src/sim/attack/        ataque posicional: drill.ts (orquesta), passing.ts (selec
 src/input/             mando virtual (teclado, mando, táctil) y reconocedor de gestos
 src/render/            agua (shader), piscina y porterías, cámara, jugadores, balón, efectos; playview.ts dibuja
                        el juego en el agua (anillo, flecha de pase con color de riesgo, entradas, ¡LIBRE!)
-src/sim/match/         partido: match.ts (máquina de estados, posesión, saques, relojes, balón), brain.ts (IA con
-                       balón), input.ts (gramática según el momento), roles.ts (repliegue, superioridad)
+src/sim/match/         partido: match.ts (máquina de estados, posesión, saques, relojes, balón, faltas, exclusiones,
+                       penaltis con el duelo de la tanda, cambios por expulsión), brain.ts (IA con balón), input.ts
+                       (gramática según el momento), roles.ts (repliegue, superioridad del contraataque)
+src/sim/rules/         reglamento puro: qué es cada contacto (nada, ordinaria, exclusión, penalti, violenta), área
+                       de gol, tiros libres, córner o saque de portería, relojes tras exclusión
+src/sim/referee/       árbitro: si pita lo clasificado (perfil, sesgo acotado, "día" por partido), tarjetas
 src/app/session.ts     interfaz común de lo que se juega; play.ts (tanda y laboratorio), attack.ts (entrenamiento),
                        match.ts (partido y laboratorios de contraataque; dirige la cámara)
                        convierten eventos de la simulación en imagen, sonido, vibración y HUD
@@ -123,3 +129,13 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
 - Pendiente de Julián (objeción nº 3): si pasar mientras se nada en el contraataque es cómodo en el móvil. La
   alternativa (TIRO lejos = pase largo) cambia la gramática [FIJO]: solo con su visto bueno.
 - Un botón pulsado antes de que cambie el momento del juego no cuenta (gesto enganchado a su contexto).
+- F3 aprobada («de momento está todo muy bien»). Julián pidió **2 periodos** (4 era demasiado largo): está en
+  `reglas.json`; el GDD sigue diciendo 4. El botón del menú se llama **«Entrenamiento del jueves»**.
+- Reglamento contrastado en F4 con World Aquatics feb. 2026 (RFEN). Donde difería del GDD manda el reglamento: «2 m» es
+  el área de gol (7,16 × 2 m) por delante de la línea del balón; tiro tapado por un defensor que sale por el fondo =
+  saque de portería; el excluido también vuelve si a su equipo le dan tiro libre, saque de portería o penalti.
+- El árbitro nunca inventa ni agrava: solo pita lo que clasifica `rules` (o algo más leve). El sesgo es ±12/8 % por
+  punto con tope de 0,25. Hay tests de Monte Carlo (`tests/unit/arbitro.test.ts`): no romper esas bandas.
+- Equilibrio F4 (`npm run sim`, partido de 2 periodos): ~4 goles por equipo, 2–3 exclusiones por equipo, ~0,3 penaltis,
+  superioridad ~35 % de gol. Faltas que provoca la IA en `tuning.json` → `partido.faltas`; árbitro en `arbitro`.
+- Nadie da golpes todavía: la acción violenta existe en las reglas pero no se genera en el juego.

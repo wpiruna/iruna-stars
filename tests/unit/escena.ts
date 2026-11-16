@@ -10,8 +10,12 @@ import type { PadState } from '../../src/sim/attack/control';
 import type { Slot, Swimmer, TeamSide } from '../../src/sim/attack/types';
 import { fieldFromRules } from '../../src/sim/field';
 import { Match } from '../../src/sim/match/match';
+import type { RefereeProfile } from '../../src/sim/referee/referee';
 
-export const field = fieldFromRules(RulesSchema.parse(rulesJson));
+export const rules = RulesSchema.parse(rulesJson);
+export const field = fieldFromRules(rules);
+/** A neutral, very consistent referee. */
+export const NEUTRAL_REFEREE: RefereeProfile = { contactTolerance: 5, exclusionTendency: 5, cardTendency: 5, bias: 0, consistency: 9 };
 export const formations = FormationsSchema.parse(formationsJson);
 export const T = tuning.ataque;
 export const TILT = 0.82;
@@ -157,6 +161,8 @@ export interface MatchOptions {
   periodSeconds?: number;
   clockSpeed?: number;
   difficulty?: 'facil' | 'normal' | 'dificil';
+  referee?: Partial<RefereeProfile>;
+  manUp?: 'attack' | 'defend';
 }
 
 export function makeMatch(options: MatchOptions = {}): Match {
@@ -165,6 +171,7 @@ export function makeMatch(options: MatchOptions = {}): Match {
   const pick = (team: Team) => ({
     team,
     field: team.players.filter((p) => p.position !== 'goalkeeper').slice(0, 6),
+    bench: team.players.filter((p) => p.position !== 'goalkeeper').slice(6),
     keeper: team.players.find((p) => p.position === 'goalkeeper') as Player,
   });
   return new Match({
@@ -187,6 +194,11 @@ export function makeMatch(options: MatchOptions = {}): Match {
     difficulty: options.difficulty ?? 'normal',
     tapMs: 180,
     autoSwitch: true,
+    rules,
+    referee: { ...NEUTRAL_REFEREE, ...options.referee },
+    refereeTuning: tuning.arbitro,
+    penalty: tuning.penalti,
+    ...(options.manUp ? { manUp: options.manUp } : {}),
   });
 }
 

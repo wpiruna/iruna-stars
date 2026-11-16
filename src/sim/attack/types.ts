@@ -51,6 +51,10 @@ export interface Swimmer {
   speedPenalty: number;
   /** 0–1: extra pressure on this swimmer's shot from a defender's contact. Set each step. */
   contactPressure: number;
+  /** Sent off for a while: swimming to (or waiting in) the re-entry area, out of the play. */
+  excluded?: boolean;
+  /** Not in the pool (on the bench, or gone for the rest of the match). */
+  away?: boolean;
 }
 
 export type PassType = 'dry' | 'wet' | 'lead' | 'long';

@@ -1,14 +1,15 @@
 /**
- * `npm run sim [-- partidos=20 periodo=480 velocidad=3.2]`: AI against AI without a screen, to check
- * that matches always finish and to tune the balance (goals, shots, turnovers, time per phase).
- * Uses the generated rival squads in data/, so levels and styles are the real ones.
+ * `npm run sim [-- partidos=20 periodo=480 velocidad=3.2 arbitro=prov-estricto]`: AI against AI
+ * without a screen, to check that matches always finish and to tune the balance (goals, shots,
+ * turnovers, time per phase, fouls, exclusions, penalties, cards). Uses the generated rival squads
+ * and referees in data/, so levels, styles and referee profiles are the real ones.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Rng } from '../../src/core/rng';
-import { toRivalTeam, type Player, type Team } from '../../src/data/model';
-import { FormationsSchema, RivalTeamSchema, RosterSchema, RulesSchema } from '../../src/data/schema';
+import { toReferee, toRivalTeam, type Player, type Referee, type Team } from '../../src/data/model';
+import { FormationsSchema, RefereeSchema, RivalTeamSchema, RosterSchema, RulesSchema } from '../../src/data/schema';
 import { pickLineup } from '../../src/sim/attack/formation';
 import { pickKeeper } from '../../src/sim/duel/shootout';
 import { fieldFromRules } from '../../src/sim/field';
@@ -30,7 +31,17 @@ const teams: Team[] = RivalTeamSchema.array()
   .parse(read('equipos.json'))
   .map((t) => toRivalTeam(t, RosterSchema.parse(read(`generado/rivales/${t.id}.json`))));
 const SLOTS = ['boya', 'extremoIzq', 'extremoDer', 'lateralIzq', 'lateralDer', 'cierre'] as const;
-const sideOf = (team: Team) => ({ team, field: [...pickLineup(team.players, [...SLOTS]).keys()] as Player[], keeper: pickKeeper(team), human: false });
+const sideOf = (team: Team) => {
+  const field = [...pickLineup(team.players, [...SLOTS]).keys()] as Player[];
+  const bench = team.players.filter((p) => p.position !== 'goalkeeper' && !field.includes(p)).slice(0, rules.convocatoria.suplentes);
+  return { team, field, bench, keeper: pickKeeper(team), human: false };
+};
+const referees: Referee[] = RefereeSchema.array().parse(read('arbitros.json')).map(toReferee);
+const chosenReferee = args.arbitro ? referees.find((r) => r.id === args.arbitro) : undefined;
+if (args.arbitro && !chosenReferee) throw new Error(`No hay ningún árbitro con id ${args.arbitro}: ${referees.map((r) => r.id).join(', ')}`);
+const fouls = { fouls: 0, exclusions: 0, penalties: 0, penaltyGoals: 0, manUp: 0, manUpGoals: 0, yellows: 0, reds: 0, subs: 0, held: 0, played: 0 };
+const byReferee: Record<string, { matches: number; exclusions: number; fouls: number; againstUs: number; againstThem: number }> = {};
+const motives: Record<string, number> = {};
 
 const rng = new Rng(String(args.semilla ?? 'sim'));
 const totals = { goals: 0, shots: 0, onTarget: 0, turnovers: 0, counters: 0, finished: 0, higherWins: 0, decided: 0, draws: 0 };
@@ -49,10 +60,15 @@ for (let i = 0; i < matches; i++) {
   const a = rng.pick(teams);
   let b = rng.pick(teams);
   while (b === a) b = rng.pick(teams);
+  const referee = chosenReferee ?? rng.pick(referees);
   const match = new Match({
     field,
     formations,
     sides: [sideOf(a), sideOf(b)],
+    rules,
+    referee,
+    refereeTuning: tuning.arbitro,
+    penalty: tuning.penalti,
     periods: rules.partido.periodos,
     periodSeconds,
     clockSpeed,
@@ -83,11 +99,19 @@ for (let i = 0; i < matches; i++) {
         missedPasses++;
         pending = false;
       }
+      if (e.type === 'foul') {
+        motives[`${e.sanction}:${e.motive}`] = (motives[`${e.sanction}:${e.motive}`] ?? 0) + 1;
+        if (e.card === 'yellow') fouls.yellows++;
+        if (e.card === 'red' || e.sanction === 'violent') fouls.reds++;
+      } else if (e.type === 'substitution') fouls.subs++;
+      else if (e.type === 'heldCall') fouls.held++;
+      else if (e.type === 'advantagePlayed') fouls.played++;
+      else if (e.type === 'penalty') shotPhase = 'penalty';
       if (e.type === 'possession') {
         possessions++;
         reasons[e.reason] = (reasons[e.reason] ?? 0) + 1;
       } else if (e.type === 'release') {
-        shotPhase = match.phase;
+        if (match.phase !== 'penalty') shotPhase = match.phase;
         shotsBy[shotPhase] = (shotsBy[shotPhase] ?? 0) + 1;
       } else if (e.type === 'goal') goalsBy[shotPhase] = (goalsBy[shotPhase] ?? 0) + 1;
     }
@@ -95,8 +119,19 @@ for (let i = 0; i < matches; i++) {
     steps++;
   }
   if (match.phase === 'fullTime') totals.finished++;
+  const refStats = (byReferee[referee.id] ??= { matches: 0, exclusions: 0, fouls: 0, againstUs: 0, againstThem: 0 });
+  refStats.matches++;
+  refStats.againstUs += match.stats[0].exclusions + match.stats[0].penalties;
+  refStats.againstThem += match.stats[1].exclusions + match.stats[1].penalties;
   for (const side of [0, 1] as const) {
     const s = match.stats[side];
+    fouls.fouls += s.fouls;
+    fouls.exclusions += s.exclusions;
+    fouls.penalties += s.penalties;
+    fouls.manUp += s.manUp;
+    fouls.manUpGoals += s.manUpGoals;
+    refStats.exclusions += s.exclusions;
+    refStats.fouls += s.fouls;
     totals.goals += s.goals;
     totals.shots += s.shots;
     totals.onTarget += s.onTarget;
@@ -111,14 +146,17 @@ for (let i = 0; i < matches; i++) {
     const higherIsA = (a.level ?? 5) > (b.level ?? 5);
     if ((ga > gb) === higherIsA) totals.higherWins++;
   }
-  console.log(`${String(i + 1).padStart(3)} ${a.code} (${a.level}) ${ga}–${gb} ${b.code} (${b.level})  tiros ${match.stats[0].shots}/${match.stats[1].shots}  pérdidas ${match.stats[0].turnovers}/${match.stats[1].turnovers}  contras ${match.stats[0].counterattacks}/${match.stats[1].counterattacks}`);
+  const [s0, s1] = match.stats;
+  console.log(
+    `${String(i + 1).padStart(3)} ${a.code} (${a.level}) ${ga}–${gb} ${b.code} (${b.level})  tiros ${s0.shots}/${s1.shots}  pérdidas ${s0.turnovers}/${s1.turnovers}  contras ${s0.counterattacks}/${s1.counterattacks}  excl ${s0.exclusions}/${s1.exclusions}  pen ${s0.penalties}/${s1.penalties}  ${referee.name}`,
+  );
 }
 
 const n = matches * 2;
 const live = (phaseTime.transition ?? 0) + (phaseTime.positional ?? 0);
 console.log('');
 console.log(`Partidos terminados: ${totals.finished}/${matches} · ${((Date.now() - started) / 1000).toFixed(0)} s de cálculo`);
-console.log(`Goles por equipo: ${(totals.goals / n).toFixed(1)} (mín ${Math.min(...scores)}, máx ${Math.max(...scores)}) · objetivo orientativo 8–16`);
+console.log(`Goles por equipo: ${(totals.goals / n).toFixed(1)} (mín ${Math.min(...scores)}, máx ${Math.max(...scores)}) · objetivo orientativo ${2 * rules.partido.periodos}–${4 * rules.partido.periodos} (8–16 en cuatro periodos)`);
 console.log(`Tiros por equipo: ${(totals.shots / n).toFixed(1)} · a puerta ${((100 * totals.onTarget) / Math.max(1, totals.shots)).toFixed(0)} % · conversión ${((100 * totals.goals) / Math.max(1, totals.shots)).toFixed(0)} %`);
 console.log(`Pérdidas por equipo: ${(totals.turnovers / n).toFixed(1)} · contraataques con superioridad: ${(totals.counters / n).toFixed(1)}`);
 console.log(`Empates: ${totals.draws} · gana el de más nivel: ${totals.higherWins}/${totals.decided}`);
@@ -126,3 +164,14 @@ console.log(`Posesiones por equipo: ${(possessions / n).toFixed(1)} · duración
 console.log(`Pases por equipo: ${(passes / n).toFixed(1)} · riesgo medio ${(riskSum / Math.max(1, passes)).toFixed(3)} · pases que no llegan al receptor: ${(missedPasses / n).toFixed(1)}`);
 console.log(`Tiros por fase: ${Object.entries(shotsBy).map(([k, v]) => `${k} ${(v / n).toFixed(1)} (goles ${((goalsBy[k] ?? 0) / n).toFixed(1)})`).join(' · ')}`);
 console.log(`Tiempo con el balón en juego: transición ${((100 * (phaseTime.transition ?? 0)) / live).toFixed(0)} % · posicional ${((100 * (phaseTime.positional ?? 0)) / live).toFixed(0)} %`);
+console.log('');
+console.log(`Faltas ordinarias por equipo: ${(fouls.fouls / n).toFixed(1)} · exclusiones: ${(fouls.exclusions / n).toFixed(1)} · penaltis: ${(fouls.penalties / n).toFixed(2)}`);
+console.log(`Superioridades por equipo: ${(fouls.manUp / n).toFixed(1)} · goles en superioridad ${(fouls.manUpGoals / n).toFixed(1)} (${((100 * fouls.manUpGoals) / Math.max(1, fouls.manUp)).toFixed(0)} %) · goles de penalti ${((goalsBy.penalty ?? 0) / n).toFixed(2)} de ${((shotsBy.penalty ?? 0) / n).toFixed(2)}`);
+console.log(`Tarjetas por partido: amarillas ${(fouls.yellows / matches).toFixed(2)} · rojas ${(fouls.reds / matches).toFixed(2)} · cambios por expulsión ${(fouls.subs / matches).toFixed(2)} · ventajas: ${fouls.held} esperadas, ${fouls.played} sin pitar por gol`);
+console.log(`Motivos: ${Object.entries(motives).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${(v / matches).toFixed(2)}`).join(' · ')}`);
+console.log('Por árbitro (exclusiones y penaltis por partido; "nos" = equipo 0):');
+for (const r of referees) {
+  const x = byReferee[r.id];
+  if (!x) continue;
+  console.log(`  ${r.name.padEnd(14)} ${String(x.matches).padStart(3)} partidos · ${(x.exclusions / x.matches).toFixed(1)} excl. · ${(x.fouls / x.matches).toFixed(1)} ordinarias · contra "nos" ${(x.againstUs / x.matches).toFixed(1)} / contra el otro ${(x.againstThem / x.matches).toFixed(1)} (sesgo ${r.bias})`);
+}

@@ -1,5 +1,5 @@
 {
-  "version": "World Aquatics 2025/26 adaptado (pendiente de contrastar en F4)",
+  "version": "Reglamento de waterpolo de World Aquatics, febrero de 2026 (traducción de la RFEN), adaptado al arcade. Contrastado en la Fase 4. Cambios a propósito: 2 periodos (lo pidió Julián) y relojes más rápidos.",
   "modoTarjetas": "arcade",
   "campo": {
     "largo": 25,
@@ -8,10 +8,13 @@
     "porteriaAlto": 0.9,
     "lineas": { "dosMetros": 2, "penalti": 5, "seisMetros": 6 }
   },
-  "partido": { "periodos": 4, "minutosMarcador": 8, "tiemposMuertos": 2, "cambioDeCampo": false },
+  "areaGol": { "ancho": 7.16 },
+  "partido": { "periodos": 2, "minutosMarcador": 8, "tiemposMuertos": 2, "cambioDeCampo": false },
   "posesion": { "primera": 28, "segunda": 18, "trasExclusion": 18, "trasCorner": 18, "trasPenalti": 18 },
   "exclusion": { "segundos": 18, "faltasPersonalesMax": 3, "brutalidadMinutos": 4 },
+  "tarjetas": { "amarillasParaRoja": 2 },
   "tiroDirectoFueraDe": 6,
+  "tiroDirectoSegundos": 1.5,
   "penaltiDesde": 5,
   "tiroLibreSegundos": 3,
   "velocidadRelojes": { "partido": 3.2, "posesion": 1.6, "exclusion": 1.6 },

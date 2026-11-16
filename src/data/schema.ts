@@ -24,6 +24,7 @@ export const SPECIAL_SHOT_TYPES = ['potencia', 'vaselina', 'bote', 'rosca'] as c
 export const CELEBRATIONS = ['puno_arriba', 'salpicar', 'senalar_banquillo', 'abrazo', 'absurda'] as const;
 export const ORIGINS = ['real', 'provisional', 'generado'] as const;
 export const CARD_MODES = ['arcade', 'reglamento'] as const;
+export type CardMode = (typeof CARD_MODES)[number];
 export const STAT_KEYS = [
   'velocidad',
   'resistencia',
@@ -209,6 +210,8 @@ export const RulesSchema = z.object({
     porteriaAlto: z.number().positive(),
     lineas: z.object({ dosMetros: z.number(), penalti: z.number(), seisMetros: z.number() }),
   }),
+  /** Goal area in front of each goal (WP 20.4): 2 m deep, 2 m beyond each post. */
+  areaGol: z.object({ ancho: z.number().positive() }),
   partido: z.object({
     periodos: z.number().int().positive(),
     minutosMarcador: z.number().positive(),
@@ -227,7 +230,11 @@ export const RulesSchema = z.object({
     faltasPersonalesMax: z.number().int().positive(),
     brutalidadMinutos: z.number().positive(),
   }),
+  /** Arcade cards: a second yellow to the same player is a red. */
+  tarjetas: z.object({ amarillasParaRoja: z.number().int().positive() }),
   tiroDirectoFueraDe: z.number().positive(),
+  /** Arcade reading of "sin demora": real seconds the taker of a free throw outside 6 m has to shoot directly. */
+  tiroDirectoSegundos: z.number().positive(),
   penaltiDesde: z.number().positive(),
   tiroLibreSegundos: z.number().positive(),
   velocidadRelojes: z.object({

@@ -11,6 +11,8 @@ const SCENARIOS: { id: AttackScenario; title: string; text: string }[] = [
   { id: 'boya', title: 'Juego con el boya', text: 'Cierre, laterales y boya: pasar dentro, luchar, girarse.' },
   { id: 'contra2x1', title: 'Contra 2x1', text: 'Dos contra uno desde el medio campo: nada y pasa a tiempo.' },
   { id: 'contra3x2', title: 'Contra 3x2', text: 'Tres contra dos: aprovecha la superioridad antes de que vuelvan.' },
+  { id: 'superioridad', title: 'Superioridad 6x5', text: 'Un rival excluido: 4-2, pases rápidos y a buscar al que queda libre.' },
+  { id: 'inferioridad', title: 'Inferioridad 5x6', text: 'Uno de los tuyos fuera: tapa, cierra los postes y aguanta 18 segundos.' },
 ];
 
 /** Before the attack training: what to practise and against whom. */
@@ -24,7 +26,7 @@ export function AttackSetup() {
         <button class="btn btn--back" onClick={() => go('menu')}>
           ‹ Volver
         </button>
-        <h2 class="heading heading--big">Entrenamiento de ataque</h2>
+        <h2 class="heading heading--big">Entrenamiento del jueves</h2>
       </header>
       <div class="panel-screen__body setup setup--attack">
         <div>

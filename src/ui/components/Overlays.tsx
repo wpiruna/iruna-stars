@@ -2,6 +2,7 @@
 import { DEBUG_AVAILABLE } from '../../debug/config';
 import { QUALITY_CHOICES } from '../../persist/storage';
 import { useApp } from '../context';
+import { hud } from '../hud';
 import { ui } from '../state';
 import { useStore } from '../store';
 
@@ -44,6 +45,7 @@ const DEVICE_LABEL = { touch: 'táctil', keyboard: 'teclado', gamepad: 'mando' }
 
 export function DebugPanel() {
   const state = useStore(ui);
+  const { mode } = useStore(hud);
   const { save, actions } = useApp();
   if (!DEBUG_AVAILABLE || !state.debug) return null;
   const info = state.debugInfo;
@@ -101,6 +103,15 @@ export function DebugPanel() {
           </button>
         ))}
       </div>
+      {(mode === 'match' || mode === 'attack') && (
+        <div class="debug__row">
+          <span>Árbitro</span>
+          <button onClick={() => actions.debugCall('exclusionRival')}>excluir rival</button>
+          <button onClick={() => actions.debugCall('exclusionOurs')}>excluir nuestro</button>
+          <button onClick={() => actions.debugCall('penaltyFor')}>penalti a favor</button>
+          <button onClick={() => actions.debugCall('penaltyAgainst')}>penalti en contra</button>
+        </div>
+      )}
       <div class="debug__row">
         <span>Carga</span>
         {LOADS.map((load) => (

@@ -125,7 +125,7 @@ export class Duel {
   // --- Ball ------------------------------------------------------------------------------------
   readonly ball: Vec3 = { x: 0, y: 0, z: 0 };
   readonly prevBall: Vec3 = { x: 0, y: 0, z: 0 };
-  private readonly ballVelocity: Vec3 = { x: 0, y: 0, z: 0 };
+  readonly ballVelocity: Vec3 = { x: 0, y: 0, z: 0 };
   ballHolder: 'shooter' | 'keeper' | null = 'shooter';
   /** True once the ball is in the net. */
   inNet = false;

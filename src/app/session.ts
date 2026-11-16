@@ -14,4 +14,8 @@ export interface Session {
   render(alpha: number, dt: number, profile: QualityProfile): void;
   /** One line for the debug layer. */
   debugLine(): string;
+  /** Debug layer: make the referee whistle something now (matches only). */
+  debugCall?(kind: DebugCall): void;
 }
+
+export type DebugCall = 'exclusionRival' | 'exclusionOurs' | 'penaltyFor' | 'penaltyAgainst';

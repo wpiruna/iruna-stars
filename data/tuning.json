@@ -532,7 +532,8 @@
           "entrada": 1.1
         }
       },
-      "pesoRiesgo": 2.0
+      "pesoRiesgo": 2.0,
+      "umbralTiroDirecto": 0.3
     },
     "defensa": {
       "cambioCono": 70,
@@ -577,6 +578,100 @@
     },
     "suelto": {
       "atacantes": 2
+    },
+    "faltas": {
+      "_nota": "Contactos que provoca la IA (los dos equipos) y cómo se reanuda tras una falta. Tasas por segundo o por jugada; se multiplican por la Agresividad del que hace el contacto (de 'agresividad.min' con 1 a 'agresividad.max' con 10).",
+      "agresividad": {
+        "min": 0.35,
+        "max": 1.9
+      },
+      "intensidad": {
+        "base": 0.38,
+        "porAgresividad": 0.45,
+        "ruido": 0.1
+      },
+      "boyaPase": 0.28,
+      "boyaGiro": 0.3,
+      "entrada": 0.35,
+      "poseedorPorSegundo": 0.1,
+      "tacticaPorSegundo": 0.4,
+      "tiro": 0.12,
+      "empujonBoya": 0.1,
+      "areaGolSegundos": 1.0,
+      "preparacion": {
+        "ordinaria": 0.55,
+        "exclusion": 1.3,
+        "penalti": 1.6
+      },
+      "humano": {
+        "toque": 0.25,
+        "toquePorAgresividad": 0.2,
+        "fuerte": 0.5,
+        "fuertePorSegundo": 0.35,
+        "fuertePorAgresividad": 0.15,
+        "revision": 0.45
+      },
+      "areaGolMargen": 0.15,
+      "areaGolSalida": 2.4
+    },
+    "superioridad": {
+      "_nota": "Superioridad (6x5) e inferioridad (5x6). 'circulacion' acelera los pases de la IA y 'umbralTiro' le pide mejor ocasión antes de tirar; 'desplazamiento' mueve la zona hacia el balón; 'distanciaPresion' es a qué distancia sale el defensor más cercano al poseedor; 'presionTiro' y 'bloqueo' rebajan lo que molesta una defensa que va con uno menos.",
+      "circulacion": 0.65,
+      "umbralTiro": 1.4,
+      "desplazamiento": 0.3,
+      "distanciaPresion": 1.3,
+      "alcancePresion": 3.2,
+      "presionTiro": 0.3,
+      "bloqueo": 0.65,
+      "reentrada": {
+        "x": 0.7,
+        "y": 1.2,
+        "llegada": 1.5
+      }
+    }
+  },
+  "arbitro": {
+    "_nota": "Árbitro (GDD §13). Probabilidad de pitar = sigmoide(logit(base) + pesos·(intensidad−0,5, Agresividad−5, −(tolerancia−5), exclusiones−5) + zona + día + jugada); luego el sesgo (+12 % contra nosotros y −8 % a favor por punto, como mucho ±0,25) y los límites. 'ruido' se escala con (10 − regularidad)/9: 'dia' se sortea una vez por partido.",
+    "clasificacion": {
+      "legalHasta": 0.3,
+      "exclusionDesde": 0.5
+    },
+    "base": {
+      "ordinaria": 0.45,
+      "exclusion": 0.6,
+      "penalti": 0.72,
+      "violenta": 0.85
+    },
+    "pesos": {
+      "intensidad": 3.0,
+      "agresividad": 0.08,
+      "tolerancia": 0.3,
+      "exclusiones": 0.22
+    },
+    "zona": {
+      "seisMetros": 0.25,
+      "contraataque": 0.35
+    },
+    "rebaja": 0.55,
+    "sesgo": {
+      "contraNosotros": 0.12,
+      "aFavor": 0.08,
+      "maximo": 0.25
+    },
+    "ruido": {
+      "dia": 0.6,
+      "jugada": 0.5
+    },
+    "limites": {
+      "min": 0.03,
+      "max": 0.97
+    },
+    "tarjetas": {
+      "intensidad": 0.85,
+      "base": 0.2,
+      "peso": 0.3,
+      "porIntensidad": 4,
+      "avisoEquipoTrasExclusiones": 4
     }
   }
 }

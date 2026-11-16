@@ -38,6 +38,10 @@ export interface BrainView {
   advantage: boolean;
   /** A set piece: the throw must be a pass. */
   mustPass: boolean;
+  /** A free throw outside 6 m: a direct shot is allowed right now (WP 7.5.1.2). */
+  directShot: boolean;
+  /** Attacking with a man more (6x5). */
+  manUp: boolean;
 }
 
 const STYLE_KEY: Record<Style, keyof MatchTuning['ia']['estilos']> = {
@@ -86,9 +90,12 @@ export class Brain {
   private delayFor(v: BrainView): number {
     const ia = this.t.ia;
     if (v.holder.keeper) return this.rng.range(this.t.portero.espera.min, this.t.portero.espera.max);
+    if (v.directShot) return 0.2 + this.level.reaccion;
     if (v.mustPass) return this.rng.range(this.t.saque.iaEspera.min, this.t.saque.iaEspera.max);
     if (v.phase === 'transition') return 0.15 + this.level.reaccion;
-    return this.rng.range(ia.circulacion.min, ia.circulacion.max) * this.style.circulacion + this.level.reaccion;
+    // With a man more the ball moves faster: that is what beats a zone (GDD §9).
+    const quick = v.manUp ? this.t.superioridad.circulacion : 1;
+    return this.rng.range(ia.circulacion.min, ia.circulacion.max) * this.style.circulacion * quick + this.level.reaccion;
   }
 
   decide(v: BrainView): BrainAction {
@@ -98,7 +105,7 @@ export class Brain {
       this.waits = 0;
       // Sometimes, while holding, send a team-mate on a drive (rápido more often).
       const p = this.t.ia.probEntrada * this.style.entrada;
-      this.driveAt = v.phase === 'positional' && !v.mustPass && !v.holder.keeper && this.rng.chance(p) ? v.time + (this.actAt - v.time) * 0.35 : -1;
+      this.driveAt = v.phase === 'positional' && !v.manUp && !v.mustPass && !v.holder.keeper && this.rng.chance(p) ? v.time + (this.actAt - v.time) * 0.35 : -1;
     }
 
     if (this.driveAt >= 0 && v.time >= this.driveAt) {
@@ -120,8 +127,14 @@ export class Brain {
   private setAttack(v: BrainView): BrainAction {
     const ia = this.t.ia;
     const late = v.shotClock <= ia.relojFinal;
-    if (!v.mustPass) {
-      const threshold = late ? ia.umbralTiroFinal : ia.umbralTiro * this.style.umbralTiro;
+    // A direct shot from a free throw only with a clear chance; with a man more, set it up first.
+    const direct = v.mustPass && v.directShot && !v.manUp;
+    if (!v.mustPass || direct) {
+      const threshold = direct
+        ? ia.umbralTiroDirecto
+        : late
+          ? ia.umbralTiroFinal
+          : ia.umbralTiro * this.style.umbralTiro * (v.manUp ? this.t.superioridad.umbralTiro : 1);
       if (v.goalChance(v.holder) >= threshold) return this.shoot(v);
     }
     let best: PassCandidate | null = null;

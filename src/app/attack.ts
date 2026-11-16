@@ -23,7 +23,7 @@ import { emptyHud, hud, type AttackScenario, type BannerTone } from '../ui/hud';
 import { vibrate } from './platform';
 import type { Session } from './session';
 
-export const SCENARIO_SLOTS: Record<Exclude<AttackScenario, 'contra2x1' | 'contra3x2'>, Slot[]> = {
+export const SCENARIO_SLOTS: Record<Exclude<AttackScenario, 'contra2x1' | 'contra3x2' | 'superioridad' | 'inferioridad'>, Slot[]> = {
   completo: ['boya', 'extremoIzq', 'extremoDer', 'lateralIzq', 'lateralDer', 'cierre'],
   // No centre: the middle is open for drives.
   entradas: ['extremoIzq', 'extremoDer', 'lateralIzq', 'lateralDer', 'cierre'],
@@ -64,7 +64,7 @@ export class AttackSession implements Session {
   constructor(
     private readonly deps: AttackDeps,
     readonly rival: Team,
-    readonly scenario: Exclude<AttackScenario, 'contra2x1' | 'contra3x2'>,
+    readonly scenario: Exclude<AttackScenario, 'contra2x1' | 'contra3x2' | 'superioridad' | 'inferioridad'>,
   ) {
     const { data } = deps;
     this.seed = (Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0;

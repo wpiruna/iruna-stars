@@ -104,6 +104,16 @@ const PAD_LABEL: Record<string, Record<InputDevice, string>> = {
     keyboard: '🛡 Toque: cambiar · mantén: nadar · J: robar · K: agarrar',
     gamepad: '🛡 Toque: cambiar · mantén: nadar · X/□: robar · A/✕: agarrar',
   },
+  shoot: {
+    touch: '¡PENALTI! Mantén TIRO para cargar · pad: apuntar',
+    keyboard: '¡PENALTI! Mantén K para cargar · flechas: apuntar',
+    gamepad: '¡PENALTI! Mantén A/✕ para cargar · stick: apuntar',
+  },
+  save: {
+    touch: '¡PENALTI! Pad ↑ o ↓ para estirarte cuando tire',
+    keyboard: '¡PENALTI! ↑ o ↓ para estirarte cuando tire',
+    gamepad: '¡PENALTI! Stick ↑ o ↓ para estirarte cuando tire',
+  },
 };
 
 const clockText = (seconds: number): string => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
@@ -136,6 +146,11 @@ function MatchHud() {
         </div>
         <div class={`scoreboard__shot${shotUrgent ? ' scoreboard__shot--urgent' : ''}`}>{match.shotClock}</div>
       </div>
+      {match.manUp && (
+        <div class={`man-up man-up--${match.manUp.ours ? 'ours' : 'theirs'}`}>
+          {match.manUp.ours ? 'SUPERIORIDAD' : 'INFERIORIDAD'} <b>{match.manUp.count}</b> · {match.manUp.seconds}
+        </div>
+      )}
       {label && match.padMode !== 'none' && <div class={`pad-mode pad-mode--${match.padMode}`}>{label}</div>}
     </>
   );
@@ -145,6 +160,18 @@ const ATTACK_HINT: Record<InputDevice, string> = {
   touch: 'Pad: pasar · HABILIDAD + pad: entrada · TIRO: tirar · HABILIDAD sola: escapada / giro del boya',
   keyboard: 'Flechas: pasar · J + flecha: entrada · K: tirar · J sola: escapada / giro del boya',
   gamepad: 'Stick: pasar · X/□ + stick: entrada · A/✕: tirar · X/□ sola: escapada / giro del boya',
+};
+
+const MAN_UP_HINT: Record<InputDevice, string> = {
+  touch: 'Pad: pasar rápido · HABILIDAD + pad: rotar 4-2 ⇄ 3-3 · TIRO: tirar',
+  keyboard: 'Flechas: pasar rápido · J + flecha: rotar 4-2 ⇄ 3-3 · K: tirar',
+  gamepad: 'Stick: pasar rápido · X/□ + stick: rotar 4-2 ⇄ 3-3 · A/✕: tirar',
+};
+
+const DEFEND_HINT: Record<InputDevice, string> = {
+  touch: 'Toque: cambiar de defensor · HABILIDAD: robar o tapar · TIRO: agarrar (¡cuidado con el árbitro!)',
+  keyboard: 'Flechas: cambiar de defensor · J: robar o tapar · K: agarrar (¡cuidado con el árbitro!)',
+  gamepad: 'Stick: cambiar de defensor · X/□: robar o tapar · A/✕: agarrar (¡cuidado con el árbitro!)',
 };
 
 /** Attack training strip: shot clock, score of the session and a one-line reminder of the controls. */
@@ -169,10 +196,11 @@ function AttackHud() {
         </div>
       </div>
       <div class="attack-tally">
-        Ataque <b>{attack.attacks}</b> · <b>{attack.goals}</b> {attack.goals === 1 ? 'gol' : 'goles'} · <b>{attack.shots}</b>{' '}
-        {attack.shots === 1 ? 'tiro' : 'tiros'} · <b>{attack.turnovers}</b> {attack.turnovers === 1 ? 'pérdida' : 'pérdidas'}
+        {attack.defending ? 'Defensa' : 'Ataque'} <b>{attack.attacks}</b> · <b>{attack.goals}</b> {attack.goals === 1 ? 'gol' : 'goles'}
+        {attack.defending ? ' encajados' : ''} · <b>{attack.shots}</b> {attack.shots === 1 ? 'tiro' : 'tiros'} · <b>{attack.turnovers}</b>{' '}
+        {attack.defending ? (attack.turnovers === 1 ? 'balón recuperado' : 'balones recuperados') : attack.turnovers === 1 ? 'pérdida' : 'pérdidas'}
       </div>
-      <p class="attack-hint">{ATTACK_HINT[device]}</p>
+      <p class="attack-hint">{attack.defending ? DEFEND_HINT[device] : attack.scenario === 'superioridad' ? MAN_UP_HINT[device] : ATTACK_HINT[device]}</p>
     </>
   );
 }
@@ -334,7 +362,12 @@ const STAT_ROWS: [Exclude<keyof HudMatchStats, 'possession' | 'goals'>, string][
   ['steals', 'Robos'],
   ['turnovers', 'Pérdidas'],
   ['counterattacks', 'Contras con superioridad'],
+  ['fouls', 'Faltas'],
+  ['exclusions', 'Exclusiones'],
+  ['penalties', 'Penaltis cometidos'],
 ];
+
+const cards = (s: HudMatchStats): string => [s.yellows > 0 ? `${s.yellows} 🟨` : '', s.reds > 0 ? `${s.reds} 🟥` : ''].filter(Boolean).join(' ') || '—';
 
 /** Final whistle: score, statistics and a line from the bench. */
 export function MatchResult() {
@@ -371,6 +404,22 @@ export function MatchResult() {
               </tr>
             ))}
             <tr>
+              <td>
+                {stats[0].manUpGoals}/{stats[0].manUp}
+              </td>
+              <th>Goles en superioridad</th>
+              <td>
+                {stats[1].manUpGoals}/{stats[1].manUp}
+              </td>
+            </tr>
+            {stats[0].yellows + stats[1].yellows + stats[0].reds + stats[1].reds > 0 && (
+              <tr>
+                <td>{cards(stats[0])}</td>
+                <th>Tarjetas</th>
+                <td>{cards(stats[1])}</td>
+              </tr>
+            )}
+            <tr>
               <td>{total > 0 ? Math.round((100 * stats[0].possession) / total) : 50} %</td>
               <th>Posesión</th>
               <td>{total > 0 ? Math.round((100 * stats[1].possession) / total) : 50} %</td>
@@ -378,6 +427,7 @@ export function MatchResult() {
           </tbody>
         </table>
       )}
+      {match.referee !== '' && <p class="result__referee">Árbitro: {match.referee}</p>}
       {result.phrase !== '' && <p class="result__phrase">«{result.phrase}»</p>}
       <div class="result__actions">
         <button class="btn" onClick={actions.restartPlay}>

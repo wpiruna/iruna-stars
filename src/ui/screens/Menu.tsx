@@ -15,7 +15,7 @@ interface Mode {
 const MODES: Mode[] = [
   { title: 'Copa de Euskal Herria', text: 'Cuartos, semifinal y final. Si pierdes, a casa.', phase: 'Fase 6' },
   { title: 'Amistoso', text: 'Un partido entero contra el rival que elijas.', open: () => go('friendlySetup') },
-  { title: 'Entrenamiento de ataque', text: 'Pase, entrada, pase y tiro contra una defensa de verdad.', open: () => go('attackSetup') },
+  { title: 'Entrenamiento del jueves', text: 'Ataque, contras, superioridad e inferioridad contra una defensa de verdad.', open: () => go('attackSetup') },
   { title: 'Tanda de penaltis', text: 'Cinco lanzamientos por equipo y muerte súbita.', open: () => go('shootoutSetup') },
 ];
 
@@ -82,7 +82,7 @@ export function Menu() {
       </div>
 
       <footer class="menu__footer" onClick={onBuildTap}>
-        Fase 3 · Partido completo · versión {__BUILD_ID__}
+        Fase 4 · Reglas y árbitro · versión {__BUILD_ID__}
       </footer>
     </section>
   );

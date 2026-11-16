@@ -14,13 +14,16 @@ export interface AppActions {
   install(): void;
   setLoad(multiplier: number): void;
   toggleDebug(): void;
+  /** Debug layer: forces a referee's call in the match being played. */
+  debugCall(kind: import('../app/session').DebugCall): void;
   /** Starts a penalty shoot-out against a rival, or the shooting lab. */
   startShootout(rivalId: string): void;
   startLab(): void;
   /** Positional attack training against a rival (F2). */
   startAttack(rivalId: string, scenario: AttackScenario): void;
   /** A full match against a rival (F3). */
-  startMatch(rivalId: string): void;
+  /** A friendly; `refereeId` null = a referee drawn at random. */
+  startMatch(rivalId: string, refereeId?: string | null): void;
   /** Leaves the game in progress and goes back to the menu. */
   exitPlay(): void;
   /** Plays the same mode again from the start. */

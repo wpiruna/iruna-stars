@@ -210,6 +210,20 @@ export class PlayView {
     label.text.scale.set(1.6);
   }
 
+  /** A caption in the water at a pool point (the referee's reasons, ¡PASA!, the rotation…). */
+  caption(text: string, color: number, at: { x: number; y: number }, seconds: number): void {
+    this.label(text, color, null, { x: at.x, y: at.y }, seconds);
+  }
+
+  /** A caption that follows a swimmer until it is removed (the seconds of an exclusion). */
+  tag(swimmer: Swimmer, text: string | null, color = 0xffd23f): void {
+    if (text === null) {
+      this.dropLabel(swimmer);
+      return;
+    }
+    this.label(text, color, swimmer, swimmer.pos, 0, true);
+  }
+
   private dropLabel(swimmer: Swimmer): void {
     const index = this.labels.findIndex((l) => l.swimmer === swimmer);
     if (index < 0) return;
@@ -383,6 +397,9 @@ export class PlayView {
     const sx = camera.projectX(x);
     const sy = camera.projectY(y);
     view.view.zIndex = sy;
+    // Substitutes on the bench and players gone for good are not in the water; the excluded fade.
+    view.view.visible = s.away !== true;
+    view.view.alpha = s.excluded ? 0.55 : 1;
 
     const keeper = s.keeper ? drill.keepers.find((k) => k.swimmer === s) : undefined;
     if (keeper) {
