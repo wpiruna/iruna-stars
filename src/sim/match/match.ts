@@ -1029,6 +1029,8 @@ export class Match {
 
     this.handleHuman(intents, context, events);
     if (this.phase === 'transition') {
+      // Arcade: the break is swum faster, so most attacks get to the set play with time left.
+      for (const s of this.movers) s.speedPenalty *= this.m.transicion.velocidad;
       if (this.time >= this.nextMarking) this.assignAllMarks();
       this.transitionTargets();
       this.checkSettle(events);
@@ -1242,7 +1244,8 @@ export class Match {
       }
     }
     a.target = target;
-    a.speedScale = this.t.nado.zona;
+    // Far from the spot (just settled): swim there; once there, small moves.
+    a.speedScale = dist(a.pos, target) > this.m.transicion.lejosDelPuesto ? 1 : this.t.nado.zona;
   }
 
   private markTarget(d: Swimmer, goal: Goal, style: DefenseStyle, holder: Swimmer | null, ballXY: Vec2): void {
@@ -1274,6 +1277,7 @@ export class Match {
     const perimeter = m.slot === 'lateralIzq' || m.slot === 'lateralDer' || m.slot === 'cierre';
     if (boya && m !== holder && perimeter && sag > 0) target = lerp2(target, add(boya.pos, dir(boya.pos, ballXY), 1.2), sag);
     d.target = target;
+    if (dist(d.pos, target) > this.m.transicion.lejosDelPuesto) d.speedScale = 1;
   }
 
   private updateArm(d: Swimmer): void {
@@ -1713,6 +1717,8 @@ export class Match {
       drives,
       boya: this.boya?.team === holder.team ? this.boya : null,
       post: this.post,
+      // On the break the defenders are swimming back: they react later to a pass (shown and rolled alike).
+      reactionExtra: this.phase === 'transition' ? this.m.transicion.reaccionPase : 0,
     };
   }
 
@@ -2961,6 +2967,8 @@ export class Match {
     if (!defender || defender === this.selected || dist(defender.pos, holder.pos) > r.distancia) return;
     let rate = lerp(r.porSegundo.min, r.porSegundo.max, sigmoid(r.pendiente * (barFactor(defender.player.stats.defense) - barFactor(holder.player.stats.skill))));
     if (holder === this.boya) rate *= 1 + Math.max(0, -this.post);
+    // Swimming with the ball on the break is hard to take off: most breaks reach the set play.
+    if (this.phase === 'transition') rate *= this.m.transicion.robo;
     if (this.setup.rng.chance(rate * DT)) this.steal(defender, holder, events);
   }
 

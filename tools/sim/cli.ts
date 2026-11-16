@@ -42,6 +42,8 @@ if (args.arbitro && !chosenReferee) throw new Error(`No hay ningún árbitro con
 const fouls = { fouls: 0, exclusions: 0, penalties: 0, penaltyGoals: 0, manUp: 0, manUpGoals: 0, yellows: 0, reds: 0, subs: 0, held: 0, played: 0 };
 const byReferee: Record<string, { matches: number; exclusions: number; fouls: number; againstUs: number; againstThem: number }> = {};
 const motives: Record<string, number> = {};
+/** Possessions that reach the set attack (GDD §4), the shot clock left when they do, and how the others end. */
+const settle = { possessions: 0, reached: 0, clockSum: 0, lost: {} as Record<string, number> };
 
 const rng = new Rng(String(args.semilla ?? 'sim'));
 const totals = { goals: 0, shots: 0, onTarget: 0, turnovers: 0, counters: 0, finished: 0, higherWins: 0, decided: 0, draws: 0 };
@@ -88,6 +90,11 @@ for (let i = 0; i < matches; i++) {
   const limit = 60 * ((rules.partido.periodos * periodSeconds) / clockSpeed + 600);
   let shotPhase = '';
   let pending = false;
+  let current: { reached: boolean } | null = null;
+  const close = (end: string): void => {
+    if (current && !current.reached) settle.lost[end] = (settle.lost[end] ?? 0) + 1;
+    current = null;
+  };
   while (match.phase !== 'fullTime' && steps < limit) {
     for (const e of match.step(neutral)) {
       if (e.type === 'pass') {
@@ -107,6 +114,17 @@ for (let i = 0; i < matches; i++) {
       else if (e.type === 'heldCall') fouls.held++;
       else if (e.type === 'advantagePlayed') fouls.played++;
       else if (e.type === 'penalty') shotPhase = 'penalty';
+      if (e.type === 'possession') {
+        close(e.reason);
+        settle.possessions++;
+        current = { reached: match.phase === 'positional' };
+        if (current.reached) settle.reached++;
+      } else if (e.type === 'phase' && e.phase === 'positional' && current && !current.reached) {
+        current.reached = true;
+        settle.reached++;
+        settle.clockSum += match.shotClock;
+      } else if (e.type === 'goal') close('gol');
+      else if (e.type === 'foul' && (e.sanction === 'penalty' || e.sanction === 'violent')) close(e.sanction);
       if (e.type === 'possession') {
         possessions++;
         reasons[e.reason] = (reasons[e.reason] ?? 0) + 1;
@@ -164,6 +182,8 @@ console.log(`Posesiones por equipo: ${(possessions / n).toFixed(1)} · duración
 console.log(`Pases por equipo: ${(passes / n).toFixed(1)} · riesgo medio ${(riskSum / Math.max(1, passes)).toFixed(3)} · pases que no llegan al receptor: ${(missedPasses / n).toFixed(1)}`);
 console.log(`Tiros por fase: ${Object.entries(shotsBy).map(([k, v]) => `${k} ${(v / n).toFixed(1)} (goles ${((goalsBy[k] ?? 0) / n).toFixed(1)})`).join(' · ')}`);
 console.log(`Tiempo con el balón en juego: transición ${((100 * (phaseTime.transition ?? 0)) / live).toFixed(0)} % · posicional ${((100 * (phaseTime.positional ?? 0)) / live).toFixed(0)} %`);
+const lost = Object.entries(settle.lost).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${((100 * v) / settle.possessions).toFixed(0)} %`).join(', ');
+console.log(`Posesiones que llegan al ataque en estático: ${((100 * settle.reached) / Math.max(1, settle.possessions)).toFixed(0)} % · reloj de posesión al llegar ${(settle.clockSum / Math.max(1, settle.reached)).toFixed(1)} s · las que no, por: ${lost}`);
 console.log('');
 console.log(`Faltas ordinarias por equipo: ${(fouls.fouls / n).toFixed(1)} · exclusiones: ${(fouls.exclusions / n).toFixed(1)} · penaltis: ${(fouls.penalties / n).toFixed(2)}`);
 console.log(`Superioridades por equipo: ${(fouls.manUp / n).toFixed(1)} · goles en superioridad ${(fouls.manUpGoals / n).toFixed(1)} (${((100 * fouls.manUpGoals) / Math.max(1, fouls.manUp)).toFixed(0)} %) · goles de penalti ${((goalsBy.penalty ?? 0) / n).toFixed(2)} de ${((shotsBy.penalty ?? 0) / n).toFixed(2)}`);

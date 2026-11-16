@@ -114,7 +114,6 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
 - Fotos: filtro arcade automático en el build y cromo vertical 3:4.
 - Nuestro equipo ataca siempre hacia la derecha (`reglas.json` → `partido.cambioDeCampo`).
 - Las plantillas de rivales se congelan; la publicación automática hace commit de las nuevas.
-- Pendiente de decidir en F3 con pruebas: cómo pasar mientras se nada en contraataque.
 - F1 probada por Julián en móvil y teclado: el tiro, la barra, el portero y el pad flotante le gustan tal
   como están. No retocar `data/tuning.json` (tiro, portero, penalti) sin motivo.
 - En la tanda juega el portero real aunque tenga las barras vacías; el provisional solo si no hay ninguno.
@@ -126,16 +125,22 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
   cada uno tiene su orquestador; el balón y el tiro están duplicados entre ambos. Unificar cuando entre el árbitro.
 - Equilibrio del partido medido con `npm run sim`: ~8 goles por equipo, 28 tiros, 36 posesiones, 7–8 contras con
   superioridad. Superioridad: «ventaja en número» mantiene la transición; solo se anuncia con un hombre libre a tiro.
-- Pendiente de Julián (objeción nº 3): si pasar mientras se nada en el contraataque es cómodo en el móvil. La
-  alternativa (TIRO lejos = pase largo) cambia la gramática [FIJO]: solo con su visto bueno.
+- Objeción nº 3 resuelta: a Julián le resulta cómodo pasar mientras nada en el contraataque (soltar el pad y un
+  toque). Se queda así; nada de «TIRO lejos = pase largo».
 - Un botón pulsado antes de que cambie el momento del juego no cuenta (gesto enganchado a su contexto).
-- F3 aprobada («de momento está todo muy bien»). Julián pidió **2 periodos** (4 era demasiado largo): está en
-  `reglas.json`; el GDD sigue diciendo 4. El botón del menú se llama **«Entrenamiento del jueves»**.
+- F3 aprobada («de momento está todo muy bien»). Julián pidió **2 periodos de 6 minutos** de marcador (4 de 8 era
+  demasiado largo), con el reloj a la misma velocidad (3,2×): está en `reglas.json`; el GDD sigue diciendo 4 de 8.
+  El botón del menú se llama **«Entrenamiento del jueves»**.
+- Ritmo pedido por Julián tras probar la F4: transiciones rápidas y pocas pérdidas en ellas; **unas 2 de cada 3
+  posesiones deben llegar al ataque en estático** (arco formado, ataque y defensa) con tiempo de posesión, y 1 de cada
+  3 puede ser contra o robo. En la transición todos nadan más rápido, se roba menos y los defensores que vuelven
+  reaccionan tarde a los pases (`tuning.json` → `partido.transicion`: velocidad, robo, reaccionPase). Hay un test que
+  lo vigila y `npm run sim` lo mide («Posesiones que llegan al ataque en estático»).
 - Reglamento contrastado en F4 con World Aquatics feb. 2026 (RFEN). Donde difería del GDD manda el reglamento: «2 m» es
   el área de gol (7,16 × 2 m) por delante de la línea del balón; tiro tapado por un defensor que sale por el fondo =
   saque de portería; el excluido también vuelve si a su equipo le dan tiro libre, saque de portería o penalti.
 - El árbitro nunca inventa ni agrava: solo pita lo que clasifica `rules` (o algo más leve). El sesgo es ±12/8 % por
   punto con tope de 0,25. Hay tests de Monte Carlo (`tests/unit/arbitro.test.ts`): no romper esas bandas.
-- Equilibrio F4 (`npm run sim`, partido de 2 periodos): ~4 goles por equipo, 2–3 exclusiones por equipo, ~0,3 penaltis,
-  superioridad ~35 % de gol. Faltas que provoca la IA en `tuning.json` → `partido.faltas`; árbitro en `arbitro`.
+- Equilibrio F4 (`npm run sim`, 2 periodos de 6 min): ~4 goles por equipo, ~2 exclusiones por equipo, ~0,3 penaltis,
+  superioridad ~35 % de gol, ~66 % de posesiones al estático con ~21 s de posesión. Faltas que provoca la IA en `tuning.json` → `partido.faltas`; árbitro en `arbitro`.
 - Nadie da golpes todavía: la acción violenta existe en las reglas pero no se genera en el juego.

@@ -307,6 +307,37 @@ describe('partidos enteros IA contra IA', () => {
   });
 });
 
+describe('ritmo del partido (lo que pidió Julián tras la F4)', () => {
+  it('unas dos de cada tres posesiones llegan al ataque en estático, y con tiempo de posesión', { timeout: 120_000 }, () => {
+    let possessions = 0;
+    let reached = 0;
+    let clock = 0;
+    for (let i = 0; i < 4; i++) {
+      const match = makeMatch({ seed: `ritmo-${i}`, periods: 2, periodSeconds: 360 });
+      let current: { reached: boolean } | null = null;
+      let steps = 0;
+      while (match.phase !== 'fullTime' && steps < 60 * 60 * 6) {
+        for (const e of match.step(NEUTRAL)) {
+          if (e.type === 'possession' && e.reason !== 'swimOff') {
+            possessions++;
+            current = { reached: match.phase === 'positional' };
+            if (current.reached) reached++;
+          } else if (e.type === 'phase' && e.phase === 'positional' && current && !current.reached) {
+            current.reached = true;
+            reached++;
+            clock += match.shotClock;
+          }
+        }
+        steps++;
+      }
+    }
+    const rate = reached / possessions;
+    expect(rate).toBeGreaterThan(0.55);
+    expect(rate).toBeLessThan(0.9);
+    expect(clock / reached).toBeGreaterThan(18);
+  });
+});
+
 describe('laboratorio de contraataque', () => {
   it('2x1: el balón es nuestro, hay superioridad y al acabar empieza otra contra', () => {
     const match = makeMatch({ seed: 'contra' });

@@ -9,7 +9,7 @@
     "lineas": { "dosMetros": 2, "penalti": 5, "seisMetros": 6 }
   },
   "areaGol": { "ancho": 7.16 },
-  "partido": { "periodos": 2, "minutosMarcador": 8, "tiemposMuertos": 2, "cambioDeCampo": false },
+  "partido": { "periodos": 2, "minutosMarcador": 6, "tiemposMuertos": 2, "cambioDeCampo": false },
   "posesion": { "primera": 28, "segunda": 18, "trasExclusion": 18, "trasCorner": 18, "trasPenalti": 18 },
   "exclusion": { "segundos": 18, "faltasPersonalesMax": 3, "brutalidadMinutos": 4 },
   "tarjetas": { "amarillasParaRoja": 2 },

@@ -32,6 +32,8 @@ export interface PassWorld {
   boya: Swimmer | null;
   /** How well the centre holds position: −1 fronted … +1 won (GDD §6.6). */
   post: number;
+  /** Extra seconds the defenders take to react (on the break they are swimming back to their goal). */
+  reactionExtra?: number;
 }
 
 export interface RiskShare {
@@ -171,6 +173,7 @@ export function passRisk(
   receiver: Swimmer,
   defenders: readonly Swimmer[],
   t: PassTuning,
+  reactionExtra = 0,
 ): { total: number; shares: RiskShare[] } {
   const d = t.defensor;
   const total = Math.max(0.01, dist(from, to)) / speed;
@@ -179,7 +182,7 @@ export function passRisk(
   for (const defender of defenders) {
     // A defender reading the lane reacts at once and reaches further.
     const reading = defender.anticipation;
-    const reaction = lerp(d.reaccion.lento, d.reaccion.rapido, barFactor(defender.player.stats.defense)) * (1 - reading);
+    const reaction = lerp(d.reaccion.lento, d.reaccion.rapido, barFactor(defender.player.stats.defense)) * (1 - reading) + reactionExtra;
     const reach = d.alcance + reading * d.alcanceAnticipacion;
     const front = fronting(receiver.pos, defender.pos, from);
     const fromReceiver = dir(receiver.pos, defender.pos);
@@ -220,7 +223,7 @@ export function evaluatePass(world: PassWorld, receiver: Swimmer, t: PassTuning)
   const point = receivePoint(world, receiver, type, speed, t);
   const endZ = type === 'dry' || type === 'long' ? t.alturaRecepcion : 0.05;
   const arc = t.arco[TYPE_KEY[type]];
-  const { total, shares } = passRisk(world.holder, world.from, point, endZ, arc, speed, receiver, world.defenders, t);
+  const { total, shares } = passRisk(world.holder, world.from, point, endZ, arc, speed, receiver, world.defenders, t, world.reactionExtra ?? 0);
   const near = nearestDefender(world, point);
   const free = near ? clamp((near.distance - 0.6) / 1.4, 0, 1) : 1;
   const drive = world.drives.get(receiver);

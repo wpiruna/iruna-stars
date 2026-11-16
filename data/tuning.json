@@ -417,19 +417,23 @@
     },
     "transicion": {
       "distanciaPosicional": 8,
-      "segundosTrasMedio": 3.5,
+      "segundosTrasMedio": 2.0,
       "estable": 0.3,
-      "maxVentaja": 6,
+      "maxVentaja": 3.5,
       "llegada": 1.6,
       "reparto": 0.4,
       "peligro": 3,
       "profundidad": 2.8,
       "carrilMax": 3,
-      "conBalon": 0.85,
+      "conBalon": 0.95,
       "ventajaDesde": 9,
       "libre": 2.2,
       "ventajaMinima": 0.4,
-      "primeraOleada": 2
+      "primeraOleada": 2,
+      "velocidad": 1.2,
+      "robo": 0.35,
+      "reaccionPase": 0.25,
+      "lejosDelPuesto": 2.0
     },
     "saque": {
       "preparacion": 0.9,
@@ -451,7 +455,7 @@
         "min": 0.6,
         "max": 1.2
       },
-      "riesgoMax": 0.35,
+      "riesgoMax": 0.2,
       "esperaHumano": 1.6
     },
     "ia": {
@@ -466,7 +470,7 @@
       "riesgoMax": 0.2,
       "transicion": {
         "avanceMin": 2.0,
-        "riesgoMax": 0.15,
+        "riesgoMax": 0.08,
         "distanciaTiro": 6.5,
         "presionMax": 0.5,
         "umbralTiro": 1.0

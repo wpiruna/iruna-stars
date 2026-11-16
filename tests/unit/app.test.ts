@@ -77,7 +77,7 @@ describe('datos en el juego', () => {
   it('la pestaña Ajustes sobrescribe solo sus valores de reglas.json', () => {
     const base = RulesSchema.parse(rulesJson);
     const rules = applyRulesOverride(base, { segundosRealesPeriodo: 120, posesionPrimera: 30, modoTarjetas: 'reglamento' });
-    expect(rules.velocidadRelojes.partido).toBe(4);
+    expect(rules.velocidadRelojes.partido).toBe((base.partido.minutosMarcador * 60) / 120);
     expect(rules.posesion.primera).toBe(30);
     expect(rules.posesion.segunda).toBe(base.posesion.segunda);
     expect(rules.modoTarjetas).toBe('reglamento');
