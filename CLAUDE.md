@@ -5,7 +5,8 @@ Juego arcade de waterpolo en 2D para móvil (y PC), protagonizado por el Waterpo
 
 Se trabaja por fases (GDD §21). Cada fase termina jugable, publicada y con su lista de pruebas en
 `docs/PRUEBAS/Fn.md`. **No se empieza la fase siguiente sin el visto bueno de Julián.**
-Fase actual: **F0 (base) terminada y publicada**; pendiente del visto bueno de Julián para empezar F1 (tiro y portero).
+Fase actual: **F1 (tiro y portero) terminada y publicada**; pendiente del visto bueno de Julián para empezar F2
+(ataque posicional). F0 aprobada.
 
 Publicado en <https://wpiruna.github.io/iruna-stars/> desde el repositorio público `wpiruna/iruna-stars`.
 Cada push a `main` convierte los datos, pasa los tests, compila y publica (`.github/workflows/publicar.yml`).
@@ -23,7 +24,11 @@ Cada push a `main` convierte los datos, pasa los tests, compila y publica (`.git
 | `npm run preview` | Sirve `dist/` en `http://localhost:4173/iruna-stars/`. |
 
 Depuración: `F3` o `º`, `?debug=1` en la dirección, o cinco toques sobre la línea de versión del menú.
-`?pantalla=datos&pestana=equipo` abre una pantalla directamente; `?carga=16` multiplica la escena.
+`?pantalla=datos&pestana=equipo` abre una pantalla directamente (`laboratorio`, `penaltis&rival=<id>`, `tanda`,
+`ajustes`…); `?carga=16` multiplica la escena de la portada.
+
+Para probar en el navegador sin pantalla: el service worker cachea la versión anterior, así que hay que
+saltárselo (DevTools: `Network.setBypassServiceWorker`) o se estará mirando un build viejo.
 
 ## Estructura
 
@@ -37,8 +42,14 @@ tools/datos/           conversor: leer-hoja → convertir → fusionar → infor
 tools/rivales/  tools/imagenes/  tools/build/
 src/core/              bucle de paso fijo 60 Hz, RNG con semilla, bus de eventos, curvas
 src/data/              schema.ts (zod, claves en castellano) → model.ts (tipos en inglés) → load.ts
-src/persist/  src/render/  src/ui/ (Preact)  src/app/  src/debug/
-src/sim/  src/input/  src/audio/                                vacíos hasta F1–F3
+src/sim/field.ts        geometría y coordenadas (x a lo largo, y hacia abajo en pantalla, z altura)
+src/sim/shooting/      modelo puro de tiro y parada + trayectoria del balón
+src/sim/duel/          duelo lanzador–portero, IA del penalti, tanda y laboratorio
+src/input/             mando virtual (teclado, mando, táctil) y reconocedor de gestos
+src/render/            agua (shader), piscina y porterías, cámara, jugadores, balón, efectos
+src/app/play.ts        sesión de juego: sim → eventos → imagen, sonido, vibración y HUD
+src/audio/sfx.ts       efectos sintetizados con WebAudio
+src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/debug/
 ```
 
 ## Convenciones
@@ -86,3 +97,6 @@ src/sim/  src/input/  src/audio/                                vacíos hasta F1
 - Nuestro equipo ataca siempre hacia la derecha (`reglas.json` → `partido.cambioDeCampo`).
 - Las plantillas de rivales se congelan; la publicación automática hace commit de las nuevas.
 - Pendiente de decidir en F3 con pruebas: cómo pasar mientras se nada en contraataque.
+- F1 probada por Julián en móvil y teclado: el tiro, la barra, el portero y el pad flotante le gustan tal
+  como están. No retocar `data/tuning.json` (tiro, portero, penalti) sin motivo.
+- En la tanda juega el portero real aunque tenga las barras vacías; el provisional solo si no hay ninguno.
