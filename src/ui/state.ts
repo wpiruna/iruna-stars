@@ -11,8 +11,10 @@ export type ScreenName =
   | 'install'
   | 'shootoutSetup'
   | 'attackSetup'
+  | 'friendlySetup'
   | 'play'
-  | 'shootoutResult';
+  | 'shootoutResult'
+  | 'matchResult';
 
 export interface DebugInfo {
   fps: number;

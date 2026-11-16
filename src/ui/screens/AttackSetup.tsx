@@ -9,6 +9,8 @@ const SCENARIOS: { id: AttackScenario; title: string; text: string }[] = [
   { id: 'completo', title: '6 contra 6', text: 'El ataque entero: boya, extremos, laterales y cierre.' },
   { id: 'entradas', title: 'Entradas', text: 'Sin boya: todo el centro libre para entrar y recibir.' },
   { id: 'boya', title: 'Juego con el boya', text: 'Cierre, laterales y boya: pasar dentro, luchar, girarse.' },
+  { id: 'contra2x1', title: 'Contra 2x1', text: 'Dos contra uno desde el medio campo: nada y pasa a tiempo.' },
+  { id: 'contra3x2', title: 'Contra 3x2', text: 'Tres contra dos: aprovecha la superioridad antes de que vuelvan.' },
 ];
 
 /** Before the attack training: what to practise and against whom. */

@@ -1,16 +1,19 @@
 /**
- * Draws the positional attack: water, pool, 13 swimmers, ball and shadow, and the HUD that
- * lives in the water (GDD §16): ring under the player with the ball, pass preview with the
- * receiver's number in the risk colour, drive arrows, "¡LIBRE!", the shot bar and aim marker.
- * It reads the simulation and never changes it.
+ * Draws a game in the water: pool, swimmers, ball and shadow, and the HUD that lives in the
+ * water (GDD §16): ring under the player you control, pass preview with the receiver's number
+ * in the risk colour, drive arrows, "¡LIBRE!", the shot bar and aim marker. Used by the attack
+ * training and by the full match. It reads the simulation and never changes it; where the
+ * camera looks is decided by whoever owns the view.
  */
 import { Container, Graphics, Sprite, Text, type Renderer } from 'pixi.js';
 import { clamp, lerp } from '../core/math';
 import type { Rng } from '../core/rng';
-import type { AttackDrill } from '../sim/attack/drill';
-import { riskColor } from '../sim/attack/passing';
-import type { AttackEvent, AttackTuning, Swimmer } from '../sim/attack/types';
-import type { Field } from '../sim/field';
+import type { Charging, Selection } from '../sim/attack/drill';
+import type { Drive } from '../sim/attack/drive';
+import type { KeeperBody } from '../sim/attack/keeper';
+import { riskColor, type PassChoice } from '../sim/attack/passing';
+import type { AttackEvent, AttackTuning, BallState, Swimmer, TeamSide } from '../sim/attack/types';
+import type { Field, Goal } from '../sim/field';
 import { optimalZone, type ShotTuning } from '../sim/shooting/model';
 import { actorTextures, BallView, Splashes, SwimmerView } from './actors';
 import { Camera, TILT } from './camera';
@@ -47,7 +50,25 @@ interface Label {
 
 const lerpAngle = (a: number, b: number, t: number): number => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * t;
 
-export class AttackView {
+/** What the view needs to read from a simulation. */
+export interface ViewSource {
+  readonly all: readonly Swimmer[];
+  readonly ball: BallState;
+  readonly keepers: readonly KeeperBody[];
+  readonly drives: ReadonlyMap<Swimmer, Drive>;
+  readonly preview: PassChoice | null;
+  readonly selection: Selection | null;
+  readonly charging: Charging | null;
+  /** The swimmer the player controls: ring in the water. */
+  readonly controlled: Swimmer | null;
+  /** The goal a team attacks. */
+  goalOf(team: TeamSide): Goal;
+}
+
+/** Sets where the camera should look this frame. */
+export type CameraDirector = (camera: Camera, snap: boolean) => void;
+
+export class PlayView {
   readonly view = new Container();
   readonly camera: Camera;
   private readonly water = new Water();
@@ -83,11 +104,13 @@ export class AttackView {
   constructor(
     private readonly renderer: Renderer,
     private readonly field: Field,
-    private readonly drill: AttackDrill,
+    private readonly drill: ViewSource,
     private readonly shotTuning: ShotTuning,
     private readonly passTuning: AttackTuning['pase'],
     private readonly rng: Rng,
     private readonly effects: TimeEffects,
+    private readonly director: CameraDirector,
+    capColors: Record<TeamSide, 'white' | 'blue'> = { 0: 'white', 1: 'blue' },
   ) {
     this.camera = new Camera(rng, field.length / 2);
     this.pool = new PoolView(field);
@@ -112,7 +135,7 @@ export class AttackView {
 
     for (const s of drill.all) {
       const view = new SwimmerView(renderer);
-      view.setCap(s.keeper ? 'red' : s.team === 0 ? 'white' : 'blue', s.player.number);
+      view.setCap(s.keeper ? 'red' : capColors[s.team], s.player.number);
       this.swimmers.set(s, view);
       this.actorLayer.addChild(view.view);
     }
@@ -139,18 +162,8 @@ export class AttackView {
     this.frame(true);
   }
 
-  /**
-   * The attacking half: the whole 3-3 in view and centred on screen. The top of the frame has
-   * room for the scoreboard, so the players on the far side are never hidden behind it.
-   */
   private frame(snap: boolean): void {
-    const goal = this.drill.goal;
-    const fit = this.camera.fit(goal.x - 9.2, goal.x + BEHIND_GOAL, 3.4, 16.6, 110);
-    const halfWidth = this.camera.width / fit.ppm / 2;
-    // Centre on the attack; never show more than a strip of deck behind the goal.
-    const x = Math.min(goal.x - 3.6, goal.x + BEHIND_GOAL + 2.5 - halfWidth);
-    const ballY = this.drill.ball.pos.y;
-    this.camera.frame({ x: Math.max(x, fit.x - halfWidth * 0.5), y: 9.55 + (ballY - 10) * 0.12, ppm: fit.ppm }, snap);
+    this.director(this.camera, snap);
   }
 
   private project(x: number, y: number, z: number, out: { x: number; y: number }): void {
@@ -204,8 +217,17 @@ export class AttackView {
     this.labels.splice(index, 1);
   }
 
-  onEvent(event: AttackEvent): void {
-    const goal = this.drill.goal;
+  /** Snaps the camera to its framing (after a cut: restart, new period…). */
+  snapCamera(): void {
+    this.frame(true);
+  }
+
+  private goalNear(x: number): Goal {
+    return x > this.field.length / 2 ? this.field.goalRight : this.field.goalLeft;
+  }
+
+  onEvent(event: AttackEvent | { type: string }): void {
+    if (!isAttackEvent(event)) return;
     switch (event.type) {
       case 'attackStart':
         this.ball.clearTrail();
@@ -273,17 +295,20 @@ export class AttackView {
       case 'frame':
         this.camera.shake(11);
         break;
-      case 'net':
+      case 'net': {
+        const goal = this.goalNear(event.at.x);
         this.pool.hitNet(goal, event.at.y - goal.y, event.at.z, 0.8);
         break;
+      }
       case 'outcome':
         if (event.outcome.type === 'goal') {
           this.effects.slowMotion(0.3, 0.45);
           this.camera.zoomPunch(0.05);
         } else if (event.outcome.type === 'save') {
           this.camera.shake(event.outcome.held ? 3 : 7);
-          const keeper = this.drill.keeper.position;
-          this.splashes.burst(keeper.x, keeper.y, 0.8, this.particleAmount, () => this.rng.next());
+          const goal = this.goalNear(this.drill.ball.pos.x);
+          const keeper = this.drill.keepers.find((k) => k.goal === goal) ?? this.drill.keepers[0];
+          if (keeper) this.splashes.burst(keeper.position.x, keeper.position.y, 0.8, this.particleAmount, () => this.rng.next());
         }
         break;
       default:
@@ -359,10 +384,10 @@ export class AttackView {
     const sy = camera.projectY(y);
     view.view.zIndex = sy;
 
-    if (s.keeper) {
-      const keeper = drill.keeper;
+    const keeper = s.keeper ? drill.keepers.find((k) => k.swimmer === s) : undefined;
+    if (keeper) {
       const stretch = keeper.stretch;
-      const lead = Math.sign(keeper.u - keeper.prevU) * -drill.goal.facing;
+      const lead = Math.sign(keeper.u - keeper.prevU) * -keeper.goal.facing;
       view.pose({
         x: sx,
         y: sy,
@@ -440,7 +465,7 @@ export class AttackView {
   }
 
   private drawRings(alpha: number, scale: number): void {
-    const holder = this.drill.holder;
+    const holder = this.drill.controlled;
     this.holderRing.visible = holder !== null;
     if (holder) {
       this.placeRing(this.holderRing, holder, alpha, scale, 0.62 + 0.03 * Math.sin(this.time * 6));
@@ -540,14 +565,14 @@ export class AttackView {
     this.aim.visible = c !== null;
     this.bounceMark.visible = c !== null && c.aim.mode === 'skip';
     if (!c) return;
-    const goal = drill.goal;
     const s = c.shooter;
+    const goal = drill.goalOf(s.team);
     const px = lerp(s.prev.x, s.pos.x, alpha);
     const py = lerp(s.prev.y, s.pos.y, alpha);
     const zone = optimalZone(s.player.stats.accuracy, this.shotTuning);
     const barHeight = 150 * scale;
     const barWidth = 22 * scale;
-    const x = camera.projectX(px) - 78 * scale - barWidth / 2;
+    const x = camera.projectX(px) - goal.facing * 78 * scale - barWidth / 2;
     const y = camera.projectY(py) - barHeight * 0.62;
     const fill = c.charge;
     const inZone = fill >= zone.start && fill <= zone.end;
@@ -595,4 +620,13 @@ export class AttackView {
       l.text.alpha = l.sticky ? 1 : clamp((l.until - this.time) / 0.25, 0, 1);
     }
   }
+}
+
+const ATTACK_EVENTS = new Set<string>([
+  'attackStart', 'whistle', 'pass', 'noReceiver', 'catch', 'intercept', 'driveStart', 'driveFree', 'driveEnd', 'noDrive',
+  'postFight', 'turn', 'escape', 'steal', 'chargeStart', 'release', 'block', 'bounce', 'dive', 'outcome', 'net', 'frame',
+  'splash', 'looseWon', 'attackEnd',
+]);
+function isAttackEvent(event: { type: string }): event is AttackEvent {
+  return ATTACK_EVENTS.has(event.type);
 }

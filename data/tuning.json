@@ -259,8 +259,8 @@
       },
       "defensor": {
         "reaccion": {
-          "lento": 0.34,
-          "rapido": 0.16
+          "lento": 0.44,
+          "rapido": 0.24
         },
         "estirada": 2.6,
         "alcance": 0.7,
@@ -271,7 +271,8 @@
         "disputa": 0.6,
         "aceleracion": 6,
         "factorPropio": 0.3,
-        "rodeo": 0.5
+        "rodeo": 0.5,
+        "alcanceAnticipacion": 0.35
       },
       "colores": {
         "verde": 0.2,
@@ -281,7 +282,7 @@
         "min": 0.12,
         "max": 0.55
       },
-      "alcanceRecepcion": 0.85,
+      "alcanceRecepcion": 1.0,
       "manoLejosDefensor": 0.7
     },
     "entrada": {
@@ -398,6 +399,184 @@
       "recogerPortero": 0.9,
       "frenado": 1.6,
       "persecucion": 1.15
+    }
+  },
+  "partido": {
+    "_nota": "Partido completo (F3): sprint inicial, transiciones, saques, periodos, IA atacante y defensa del jugador. Tiempos en segundos reales salvo los del marcador.",
+    "sprint": {
+      "preparacion": 1.6,
+      "velocidad": 1.12,
+      "bonusMax": 0.15,
+      "pulsacionesMax": 6,
+      "pulsacionesIa": {
+        "facil": 3,
+        "normal": 4.5,
+        "dificil": 5.5
+      },
+      "recoger": 0.6
+    },
+    "transicion": {
+      "distanciaPosicional": 8,
+      "segundosTrasMedio": 3.5,
+      "estable": 0.3,
+      "maxVentaja": 6,
+      "llegada": 1.6,
+      "reparto": 0.4,
+      "peligro": 3,
+      "profundidad": 2.8,
+      "carrilMax": 3,
+      "conBalon": 0.85,
+      "ventajaDesde": 9,
+      "libre": 2.2,
+      "ventajaMinima": 0.4,
+      "primeraOleada": 2
+    },
+    "saque": {
+      "preparacion": 0.9,
+      "plazo": 3,
+      "iaEspera": {
+        "min": 0.4,
+        "max": 1.1
+      }
+    },
+    "gol": {
+      "celebracion": 2.6
+    },
+    "periodo": {
+      "descanso": 3.5,
+      "mitad": 6
+    },
+    "portero": {
+      "espera": {
+        "min": 0.6,
+        "max": 1.2
+      },
+      "riesgoMax": 0.35,
+      "esperaHumano": 1.6
+    },
+    "ia": {
+      "circulacion": {
+        "min": 0.8,
+        "max": 2.0
+      },
+      "umbralTiro": 0.23,
+      "umbralTiroFinal": 0.1,
+      "relojFinal": 4,
+      "probEntrada": 0.35,
+      "riesgoMax": 0.2,
+      "transicion": {
+        "avanceMin": 2.0,
+        "riesgoMax": 0.15,
+        "distanciaTiro": 6.5,
+        "presionMax": 0.5,
+        "umbralTiro": 1.0
+      },
+      "carga": {
+        "error": {
+          "min": 0.03,
+          "max": 0.09
+        }
+      },
+      "modos": {
+        "directo": 0.75,
+        "bote": 0.2,
+        "vaselina": 0.05
+      },
+      "muestrasTiro": 8,
+      "dificultad": {
+        "facil": {
+          "reaccion": 0.35,
+          "ruido": 0.25,
+          "errorCarga": 1.5
+        },
+        "normal": {
+          "reaccion": 0.15,
+          "ruido": 0.12,
+          "errorCarga": 1
+        },
+        "dificil": {
+          "reaccion": 0.05,
+          "ruido": 0.05,
+          "errorCarga": 0.75
+        }
+      },
+      "estilos": {
+        "equilibrado": {
+          "circulacion": 1,
+          "umbralTiro": 1,
+          "entrada": 1
+        },
+        "rapido": {
+          "circulacion": 0.75,
+          "umbralTiro": 1,
+          "entrada": 1.3
+        },
+        "lanzadores": {
+          "circulacion": 0.9,
+          "umbralTiro": 0.8,
+          "entrada": 0.8
+        },
+        "defensivo": {
+          "circulacion": 1.15,
+          "umbralTiro": 1.1,
+          "entrada": 0.9
+        },
+        "fisico": {
+          "circulacion": 1,
+          "umbralTiro": 1,
+          "entrada": 1
+        },
+        "estrellas": {
+          "circulacion": 0.95,
+          "umbralTiro": 0.9,
+          "entrada": 1.1
+        }
+      },
+      "pesoRiesgo": 2.0
+    },
+    "defensa": {
+      "cambioCono": 70,
+      "empujon": 1.4,
+      "aceleron": {
+        "factor": 1.25,
+        "duracion": 0.6,
+        "enfriamiento": 1.5
+      },
+      "robo": {
+        "distancia": 1.05,
+        "base": 0.1,
+        "escala": 0.6,
+        "pendiente": 3,
+        "castigo": 0.8,
+        "enfriamiento": 1.0
+      },
+      "anticipacion": {
+        "duracion": 0.7,
+        "alcance": 0.35,
+        "enfriamiento": 1.2
+      },
+      "bloqueo": {
+        "duracion": 1.0,
+        "distancia": 3
+      },
+      "contacto": {
+        "distancia": 1.3,
+        "leve": 0.6,
+        "fuerte": 0.35,
+        "segundosLeve": 0.5,
+        "segundosFuerte": 1.0,
+        "perdida": 0.12,
+        "presion": 0.3,
+        "toqueMs": 200
+      }
+    },
+    "camara": {
+      "transicion": 50,
+      "adelanto": 3.2,
+      "sprint": 42
+    },
+    "suelto": {
+      "atacantes": 2
     }
   }
 }

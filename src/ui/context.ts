@@ -19,6 +19,8 @@ export interface AppActions {
   startLab(): void;
   /** Positional attack training against a rival (F2). */
   startAttack(rivalId: string, scenario: AttackScenario): void;
+  /** A full match against a rival (F3). */
+  startMatch(rivalId: string): void;
   /** Leaves the game in progress and goes back to the menu. */
   exitPlay(): void;
   /** Plays the same mode again from the start. */

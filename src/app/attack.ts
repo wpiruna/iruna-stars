@@ -9,8 +9,10 @@ import type { GameData } from '../data/load';
 import type { Team } from '../data/model';
 import type { Controller } from '../input/controller';
 import type { SaveStore } from '../persist/storage';
-import { AttackView } from '../render/attackview';
-import { TILT } from '../render/camera';
+import { BEHIND_GOAL } from '../render/pool';
+import { PlayView } from '../render/playview';
+import { TILT, type Camera } from '../render/camera';
+import type { Goal } from '../sim/field';
 import type { QualityProfile } from '../render/quality';
 import { AttackDrill } from '../sim/attack/drill';
 import { pickLineup } from '../sim/attack/formation';
@@ -21,7 +23,7 @@ import { emptyHud, hud, type AttackScenario, type BannerTone } from '../ui/hud';
 import { vibrate } from './platform';
 import type { Session } from './session';
 
-export const SCENARIO_SLOTS: Record<AttackScenario, Slot[]> = {
+export const SCENARIO_SLOTS: Record<Exclude<AttackScenario, 'contra2x1' | 'contra3x2'>, Slot[]> = {
   completo: ['boya', 'extremoIzq', 'extremoDer', 'lateralIzq', 'lateralDer', 'cierre'],
   // No centre: the middle is open for drives.
   entradas: ['extremoIzq', 'extremoDer', 'lateralIzq', 'lateralDer', 'cierre'],
@@ -51,7 +53,7 @@ export class AttackSession implements Session {
   readonly seed: number;
   timeScale = 1;
   readonly drill: AttackDrill;
-  private readonly attackView: AttackView;
+  private readonly attackView: PlayView;
   private freeze = 0;
   private slowSeconds = 0;
   private bannerId = 0;
@@ -62,7 +64,7 @@ export class AttackSession implements Session {
   constructor(
     private readonly deps: AttackDeps,
     readonly rival: Team,
-    readonly scenario: AttackScenario,
+    readonly scenario: Exclude<AttackScenario, 'contra2x1' | 'contra3x2'>,
   ) {
     const { data } = deps;
     this.seed = (Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0;
@@ -87,13 +89,22 @@ export class AttackSession implements Session {
       tilt: TILT,
       rng: rng.fork('drill'),
     });
-    this.attackView = new AttackView(deps.renderer, field, this.drill, data.tuning.tiro, data.tuning.ataque.pase, rng.fork('view'), {
-      hitStop: (frames) => (this.freeze = Math.max(this.freeze, frames)),
-      slowMotion: (scale, seconds) => {
-        this.timeScale = scale;
-        this.slowSeconds = seconds;
+    this.attackView = new PlayView(
+      deps.renderer,
+      field,
+      this.drill,
+      data.tuning.tiro,
+      data.tuning.ataque.pase,
+      rng.fork('view'),
+      {
+        hitStop: (frames) => (this.freeze = Math.max(this.freeze, frames)),
+        slowMotion: (scale, seconds) => {
+          this.timeScale = scale;
+          this.slowSeconds = seconds;
+        },
       },
-    });
+      (camera, snap) => frameAttack(camera, this.drill.goal, this.drill.ball.pos.y, snap),
+    );
     this.view = this.attackView.view;
     hud.set({
       ...emptyHud(),
@@ -237,4 +248,20 @@ export class AttackSession implements Session {
         break;
     }
   }
+}
+
+/**
+ * The attacking half: the whole 3-3 in view and centred on screen. The top of the frame has
+ * room for the scoreboard, so the players on the far side are never hidden behind it.
+ */
+export function frameAttack(camera: Camera, goal: Goal, ballY: number, snap: boolean): void {
+  const near = goal.x - goal.facing * 9.2;
+  const far = goal.x + goal.facing * BEHIND_GOAL;
+  const fit = camera.fit(Math.min(near, far), Math.max(near, far), 3.4, 16.6, 110);
+  const halfWidth = camera.width / fit.ppm / 2;
+  // Centre on the attack; never show more than a strip of deck behind the goal.
+  const centre = goal.x - goal.facing * 3.6;
+  const limit = goal.x + goal.facing * (BEHIND_GOAL + 2.5) - goal.facing * halfWidth;
+  const x = goal.facing === 1 ? Math.min(centre, limit) : Math.max(centre, limit);
+  camera.frame({ x, y: 9.55 + (ballY - 10) * 0.12, ppm: fit.ppm }, snap);
 }

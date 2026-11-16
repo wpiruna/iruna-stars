@@ -6,7 +6,7 @@ import { imageUrl, playerPlaceholder } from '../../data/images';
 import { LAB_SPOTS, type LabSettings } from '../../sim/duel/lab';
 import { Shield } from '../components/Shield';
 import { useApp } from '../context';
-import { hud, type HudTeam } from '../hud';
+import { hud, type HudMatchStats, type HudTeam } from '../hud';
 import { useStore } from '../store';
 
 const SHOOT_HINT: Record<InputDevice, string> = {
@@ -91,6 +91,53 @@ function TurnCard() {
       <p class="turn__hint">{aim !== '' ? aim : role === 'shooter' ? SHOOT_HINT[device] : KEEP_HINT[device]}</p>
       {timeLeft !== null && role === 'shooter' && timeLeft <= 5 && <span class="turn__clock">{timeLeft}</span>}
     </div>
+  );
+}
+
+const PAD_LABEL: Record<string, Record<InputDevice, string>> = {
+  sprint: { touch: '¡Machaca HABILIDAD!', keyboard: '¡Machaca J!', gamepad: '¡Machaca X/□!' },
+  pass: { touch: '⇄ Pad: pasar', keyboard: '⇄ Flechas: pasar', gamepad: '⇄ Stick: pasar' },
+  swim: { touch: '✋ Mantén: nadar · toque: pasar', keyboard: '✋ Mantén: nadar · toque: pasar', gamepad: '✋ Mantén: nadar · toque: pasar' },
+  keeper: { touch: 'Toca hacia un compañero para sacar', keyboard: 'Toca una flecha para sacar', gamepad: 'Toca el stick para sacar' },
+  defend: {
+    touch: '🛡 Toque: cambiar · mantén: nadar · HABILIDAD: robar · TIRO: agarrar',
+    keyboard: '🛡 Toque: cambiar · mantén: nadar · J: robar · K: agarrar',
+    gamepad: '🛡 Toque: cambiar · mantén: nadar · X/□: robar · A/✕: agarrar',
+  },
+};
+
+const clockText = (seconds: number): string => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+const PERIOD = ['', '1º', '2º', '3º', '4º', '5º', '6º'];
+
+/** Television scoreboard and what the pad does right now (GDD §4 and §16). */
+function MatchHud() {
+  const { match, device } = useStore(hud);
+  if (!match) return null;
+  const shotUrgent = match.shotClock <= 5 && (match.phase === 'transition' || match.phase === 'positional');
+  const label = PAD_LABEL[match.padMode]?.[device];
+  return (
+    <>
+      <div class="scoreboard scoreboard--match">
+        <div class={`scoreboard__team${match.possession === 0 ? ' scoreboard__team--ball' : ''}`}>
+          <Shield id={match.ours.id} code={match.ours.code} image={match.ours.shield} size={2.6} />
+          <span class="scoreboard__code">{match.ours.code}</span>
+        </div>
+        <div class="scoreboard__score">
+          <b>{match.score[0]}</b>
+          <span class="scoreboard__time">
+            <em>{PERIOD[match.period]}</em>
+            {clockText(match.clock)}
+          </span>
+          <b>{match.score[1]}</b>
+        </div>
+        <div class={`scoreboard__team scoreboard__team--right${match.possession === 1 ? ' scoreboard__team--ball' : ''}`}>
+          <span class="scoreboard__code">{match.rival.code}</span>
+          <Shield id={match.rival.id} code={match.rival.code} image={match.rival.shield} size={2.6} />
+        </div>
+        <div class={`scoreboard__shot${shotUrgent ? ' scoreboard__shot--urgent' : ''}`}>{match.shotClock}</div>
+      </div>
+      {label && match.padMode !== 'none' && <div class={`pad-mode pad-mode--${match.padMode}`}>{label}</div>}
+    </>
   );
 }
 
@@ -209,7 +256,13 @@ function PauseMenu() {
           Continuar
         </button>
         <button class="btn" onClick={actions.restartPlay}>
-          {mode === 'lab' ? 'Reiniciar el laboratorio' : mode === 'attack' ? 'Empezar de cero' : 'Empezar la tanda de nuevo'}
+          {mode === 'lab'
+            ? 'Reiniciar el laboratorio'
+            : mode === 'attack'
+              ? 'Empezar de cero'
+              : mode === 'match'
+                ? 'Empezar el partido de nuevo'
+                : 'Empezar la tanda de nuevo'}
         </button>
         <button class="btn" onClick={actions.exitPlay}>
           Salir al menú
@@ -226,6 +279,7 @@ export function Play() {
     <section class="play">
       <Scoreboard />
       <AttackHud />
+      <MatchHud />
       <Banner />
       <TurnCard />
       <LabPanel />
@@ -264,6 +318,70 @@ export function ShootoutResult() {
       <div class="result__actions">
         <button class="btn" onClick={actions.restartPlay}>
           Otra tanda
+        </button>
+        <button class="btn" onClick={actions.exitPlay}>
+          Menú
+        </button>
+      </div>
+    </section>
+  );
+}
+
+const STAT_ROWS: [Exclude<keyof HudMatchStats, 'possession' | 'goals'>, string][] = [
+  ['shots', 'Tiros'],
+  ['onTarget', 'Tiros a puerta'],
+  ['saves', 'Paradas'],
+  ['steals', 'Robos'],
+  ['turnovers', 'Pérdidas'],
+  ['counterattacks', 'Contras con superioridad'],
+];
+
+/** Final whistle: score, statistics and a line from the bench. */
+export function MatchResult() {
+  const { actions } = useApp();
+  const { result, match } = useStore(hud);
+  if (!result || !match) return null;
+  const title = result.draw ? 'EMPATE' : result.won ? '¡VICTORIA!' : 'DERROTA';
+  const stats = match.stats;
+  const total = stats ? stats[0].possession + stats[1].possession : 0;
+  return (
+    <section class={`screen result result--${result.draw ? 'draw' : result.won ? 'won' : 'lost'}`}>
+      <h2 class="result__title">{title}</h2>
+      <div class="result__score">
+        <div>
+          <Shield id={match.ours.id} code={match.ours.code} image={match.ours.shield} size={5} />
+          <span>{match.ours.name}</span>
+        </div>
+        <strong>
+          {result.score[0]} – {result.score[1]}
+        </strong>
+        <div>
+          <Shield id={match.rival.id} code={match.rival.code} image={match.rival.shield} size={5} />
+          <span>{match.rival.name}</span>
+        </div>
+      </div>
+      {stats && (
+        <table class="match-stats">
+          <tbody>
+            {STAT_ROWS.map(([key, label]) => (
+              <tr>
+                <td>{stats[0][key]}</td>
+                <th>{label}</th>
+                <td>{stats[1][key]}</td>
+              </tr>
+            ))}
+            <tr>
+              <td>{total > 0 ? Math.round((100 * stats[0].possession) / total) : 50} %</td>
+              <th>Posesión</th>
+              <td>{total > 0 ? Math.round((100 * stats[1].possession) / total) : 50} %</td>
+            </tr>
+          </tbody>
+        </table>
+      )}
+      {result.phrase !== '' && <p class="result__phrase">«{result.phrase}»</p>}
+      <div class="result__actions">
+        <button class="btn" onClick={actions.restartPlay}>
+          Revancha
         </button>
         <button class="btn" onClick={actions.exitPlay}>
           Menú

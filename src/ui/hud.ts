@@ -13,7 +13,7 @@ export interface HudTeam {
 
 export type BannerTone = 'great' | 'bad' | 'neutral';
 
-export type AttackScenario = 'completo' | 'entradas' | 'boya';
+export type AttackScenario = 'completo' | 'entradas' | 'boya' | 'contra2x1' | 'contra3x2';
 
 export interface HudAttack {
   scenario: AttackScenario;
@@ -28,8 +28,43 @@ export interface HudAttack {
   rival: { id: string; code: string; shield?: string; name: string };
 }
 
+export interface HudTeamInfo {
+  id: string;
+  code: string;
+  name: string;
+  shield?: string;
+}
+
+export interface HudMatchStats {
+  goals: number;
+  shots: number;
+  onTarget: number;
+  saves: number;
+  steals: number;
+  turnovers: number;
+  counterattacks: number;
+  possession: number;
+}
+
+export interface HudMatch {
+  ours: HudTeamInfo;
+  rival: HudTeamInfo;
+  score: [number, number];
+  period: number;
+  periods: number;
+  /** Scoreboard seconds left in the period. */
+  clock: number;
+  shotClock: number;
+  /** Team with the ball: 0 = us. */
+  possession: 0 | 1 | null;
+  padMode: 'none' | 'sprint' | 'pass' | 'swim' | 'defend' | 'keeper';
+  phase: string;
+  /** Filled in at the final whistle. */
+  stats: [HudMatchStats, HudMatchStats] | null;
+}
+
 export interface HudState {
-  mode: 'shootout' | 'lab' | 'attack' | null;
+  mode: 'shootout' | 'lab' | 'attack' | 'match' | null;
   teams: [HudTeam, HudTeam] | null;
   kicksPerTeam: number;
   suddenDeath: boolean;
@@ -47,9 +82,10 @@ export interface HudState {
   timeLeft: number | null;
   paused: boolean;
   device: InputDevice;
-  result: { won: boolean; score: [number, number]; phrase: string } | null;
+  result: { won: boolean; draw?: boolean; score: [number, number]; phrase: string } | null;
   lab: { shots: number; goals: number; saves: number; posts: number; misses: number; last: string } | null;
   attack: HudAttack | null;
+  match: HudMatch | null;
 }
 
 export const emptyHud = (): HudState => ({
@@ -68,6 +104,7 @@ export const emptyHud = (): HudState => ({
   result: null,
   lab: null,
   attack: null,
+  match: null,
 });
 
 export const hud = createStore<HudState>(emptyHud());

@@ -24,7 +24,7 @@ export function moveSwimmers(swimmers: readonly Swimmer[], dt: number, t: SwimTu
     const dy = s.target.y - s.pos.y;
     const d = Math.hypot(dx, dy);
     // Arrive gently instead of overshooting the spot.
-    const want = Math.min(s.topSpeed * s.speedScale, d * 2.2);
+    const want = Math.min(s.topSpeed * s.speedScale * s.speedPenalty, d * 2.2);
     let vx = d > 1e-4 ? (dx / d) * want : 0;
     let vy = d > 1e-4 ? (dy / d) * want : 0;
     for (const o of swimmers) {

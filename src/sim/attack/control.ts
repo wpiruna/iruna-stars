@@ -49,12 +49,20 @@ export class AttackInput {
 
   constructor(private readonly t: AttackTuning['control']) {}
 
-  /** Drops any gesture in progress silently; the pad has to come back to rest before it counts. */
-  reset(): void {
+  /**
+   * Drops any gesture in progress silently; the pad has to come back to rest before it counts.
+   * Passing the current buttons avoids reading a button that is already held as a new press.
+   */
+  reset(shot?: boolean, skill?: boolean): void {
     this.aiming = false;
     this.selecting = false;
     this.deadSince = -1;
     this.latched = true;
+    if (shot !== undefined) this.shotPrev = shot;
+    if (skill !== undefined) {
+      this.skillPrev = skill;
+      this.skillMoved = true;
+    }
   }
 
   get isAiming(): boolean {

@@ -177,7 +177,10 @@ export function passRisk(
   const shares: RiskShare[] = [];
   let keep = 1;
   for (const defender of defenders) {
-    const reaction = lerp(d.reaccion.lento, d.reaccion.rapido, barFactor(defender.player.stats.defense));
+    // A defender reading the lane reacts at once and reaches further.
+    const reading = defender.anticipation;
+    const reaction = lerp(d.reaccion.lento, d.reaccion.rapido, barFactor(defender.player.stats.defense)) * (1 - reading);
+    const reach = d.alcance + reading * d.alcanceAnticipacion;
     const front = fronting(receiver.pos, defender.pos, from);
     const fromReceiver = dir(receiver.pos, defender.pos);
     let best = 0;
@@ -189,7 +192,7 @@ export function passRisk(
       if (z > d.alturaAlcance) continue;
       // How close to the catch: there the receiver's body is in the way of a defender who does not front.
       const nearCatch = dist(p, to);
-      let gap = Math.max(0, dist(defender.pos, p) - d.alcance);
+      let gap = Math.max(0, dist(defender.pos, p) - reach);
       // A ball on the far side of the receiver means going round their body.
       if (dist(p, receiver.pos) < d.radioEscudo && dot(fromReceiver, dir(receiver.pos, p)) < 0) gap += d.rodeo;
       let r = sigmoid(d.pendiente * (s * total - (reaction + timeToCover(gap, d))));

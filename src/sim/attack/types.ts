@@ -45,6 +45,12 @@ export interface Swimmer {
   cooldownUntil: number;
   /** 0–1: wrestling (post fight, turn), for the animation. */
   struggle: number;
+  /** 0–1: a defender reading a passing lane (cuts passes out more easily). Set each step. */
+  anticipation: number;
+  /** Multiplier on the top speed (held, beaten, bursting). Set each step; 1 = normal. */
+  speedPenalty: number;
+  /** 0–1: extra pressure on this swimmer's shot from a defender's contact. Set each step. */
+  contactPressure: number;
 }
 
 export type PassType = 'dry' | 'wet' | 'lead' | 'long';
@@ -86,6 +92,8 @@ export interface BallState {
   /** Out of play: in the net, out over the line or held by the keeper. Nobody can pick it up. */
   dead: boolean;
   inNet: boolean;
+  /** Last swimmer who touched the ball (decides corner or goal throw). */
+  lastTouch: Swimmer | null;
 }
 
 export type AttackResult = 'goal' | 'save' | 'miss' | 'steal' | 'intercept' | 'clock' | 'loose';

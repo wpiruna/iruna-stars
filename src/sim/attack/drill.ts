@@ -93,6 +93,9 @@ function makeSwimmer(player: Player, team: TeamSide, keeper: boolean, t: AttackT
     protectUntil: 0,
     cooldownUntil: 0,
     struggle: 0,
+    anticipation: 0,
+    speedPenalty: 1,
+    contactPressure: 0,
   };
 }
 
@@ -160,6 +163,7 @@ export class AttackDrill {
       free: false,
       dead: false,
       inNet: false,
+      lastTouch: null,
     };
     this.reset([]);
   }
@@ -167,6 +171,20 @@ export class AttackDrill {
   /** The attacker playing in the centre spot right now. */
   get boya(): Swimmer | null {
     return this.attackers.find((a) => a.slot === 'boya') ?? null;
+  }
+
+  /** For the view: the keepers in the water. */
+  get keepers(): KeeperBody[] {
+    return [this.keeper];
+  }
+
+  /** For the view: the swimmer the player controls (the one with the ball). */
+  get controlled(): Swimmer | null {
+    return this.holder;
+  }
+
+  goalOf(): Goal {
+    return this.goal;
   }
 
   /** Our player with the ball, if any: the one the human controls. */

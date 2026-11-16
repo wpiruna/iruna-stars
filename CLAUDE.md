@@ -5,8 +5,8 @@ Juego arcade de waterpolo en 2D para móvil (y PC), protagonizado por el Waterpo
 
 Se trabaja por fases (GDD §21). Cada fase termina jugable, publicada y con su lista de pruebas en
 `docs/PRUEBAS/Fn.md`. **No se empieza la fase siguiente sin el visto bueno de Julián.**
-Fase actual: **F2 (ataque posicional) terminada y publicada**; pendiente del visto bueno de Julián para empezar F3
-(transiciones, defensa del usuario y partido completo). F0 y F1 aprobadas.
+Fase actual: **F3 (partido completo) terminada y publicada**; pendiente del visto bueno de Julián para empezar F4
+(reglas y árbitro). F0, F1 y F2 aprobadas.
 
 Publicado en <https://wpiruna.github.io/iruna-stars/> desde el repositorio público `wpiruna/iruna-stars`.
 Cada push a `main` convierte los datos, pasa los tests, compila y publica (`.github/workflows/publicar.yml`).
@@ -19,14 +19,18 @@ Cada push a `main` convierte los datos, pasa los tests, compila y publica (`.git
 | `npm run datos` | Hoja + `assets/` → JSON de `data/`, imágenes optimizadas, iconos e `INFORME_DATOS.md`. |
 | `npm run rivales -- --regenerar <id>` | Rehace la plantilla guardada de un rival (`--todos` para todas). |
 | `npm test` | Vitest. |
+| `npm run sim -- partidos=200` | Partidos IA contra IA sin pantalla: comprueba que terminan y da el equilibrio (goles, tiros, pérdidas, tiempo por fase). |
 | `npm run typecheck` | `tsc --noEmit`. |
 | `npm run build` | datos → tipos → web (`dist/`) → HTML único (`dist/waterpolo.html`) → control de peso. |
 | `npm run preview` | Sirve `dist/` en `http://localhost:4173/iruna-stars/`. |
 
 Depuración: `F3` o `º`, `?debug=1` en la dirección, o cinco toques sobre la línea de versión del menú.
 `?pantalla=datos&pestana=equipo` abre una pantalla directamente (`laboratorio`, `penaltis&rival=<id>`,
-`ataque&rival=<id>&escenario=completo|entradas|boya`, `tanda`, `entrenamiento`, `ajustes`…); `?carga=16` multiplica
-la escena de la portada.
+`ataque&rival=<id>&escenario=completo|entradas|boya|contra2x1|contra3x2`, `partido&rival=<id>&minutos=1`, `tanda`,
+`entrenamiento`, `amistoso`, `ajustes`…); `?carga=16` multiplica la escena de la portada.
+
+Al parar servidores de prueba no usar `pkill -f` con un patrón que también aparezca en la misma orden: se mata a sí
+misma. Mejor `kill` con el número de proceso.
 
 Para probar en el navegador sin pantalla: el service worker cachea la versión anterior, así que hay que
 saltárselo (DevTools: `Network.setBypassServiceWorker`) o se estará mirando un build viejo.
@@ -49,9 +53,12 @@ src/sim/duel/          duelo lanzador–portero, IA del penalti, tanda y laborat
 src/sim/attack/        ataque posicional: drill.ts (orquesta), passing.ts (selector [FIJO] y riesgo), control.ts
                        (gramática de controles), drive.ts (entradas), formation.ts, keeper.ts, movement.ts
 src/input/             mando virtual (teclado, mando, táctil) y reconocedor de gestos
-src/render/            agua (shader), piscina y porterías, cámara, jugadores, balón, efectos; attackview.ts
-                       dibuja el ataque (flecha de pase con color de riesgo, entradas, ¡LIBRE!)
-src/app/session.ts     interfaz común de lo que se juega; play.ts (tanda y laboratorio), attack.ts (entrenamiento)
+src/render/            agua (shader), piscina y porterías, cámara, jugadores, balón, efectos; playview.ts dibuja
+                       el juego en el agua (anillo, flecha de pase con color de riesgo, entradas, ¡LIBRE!)
+src/sim/match/         partido: match.ts (máquina de estados, posesión, saques, relojes, balón), brain.ts (IA con
+                       balón), input.ts (gramática según el momento), roles.ts (repliegue, superioridad)
+src/app/session.ts     interfaz común de lo que se juega; play.ts (tanda y laboratorio), attack.ts (entrenamiento),
+                       match.ts (partido y laboratorios de contraataque; dirige la cámara)
                        convierten eventos de la simulación en imagen, sonido, vibración y HUD
 src/audio/sfx.ts       efectos sintetizados con WebAudio
 src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/debug/
@@ -108,3 +115,11 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
 - Selector de pase: el aviso de riesgo y la tirada real usan el mismo cálculo (`passRisk`); hay un test que
   comprueba que la frecuencia de intercepciones coincide con lo mostrado. No romper esa igualdad.
 - Entradas calibradas con una curva gradual (igualados ≈ 45 % ¡LIBRE!); nada garantizado ni imposible.
+- F2 aprobada («está super chulo, me encanta»).
+- El entrenamiento de ataque (`AttackDrill`) y el partido (`Match`) comparten los módulos de `src/sim/attack/` pero
+  cada uno tiene su orquestador; el balón y el tiro están duplicados entre ambos. Unificar cuando entre el árbitro.
+- Equilibrio del partido medido con `npm run sim`: ~8 goles por equipo, 28 tiros, 36 posesiones, 7–8 contras con
+  superioridad. Superioridad: «ventaja en número» mantiene la transición; solo se anuncia con un hombre libre a tiro.
+- Pendiente de Julián (objeción nº 3): si pasar mientras se nada en el contraataque es cómodo en el móvil. La
+  alternativa (TIRO lejos = pase largo) cambia la gramática [FIJO]: solo con su visto bueno.
+- Un botón pulsado antes de que cambie el momento del juego no cuenta (gesto enganchado a su contexto).

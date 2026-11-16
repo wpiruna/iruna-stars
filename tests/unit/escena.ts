@@ -3,12 +3,13 @@ import formationsJson from '../../data/formaciones.json';
 import rulesJson from '../../data/reglas.json';
 import tuning from '../../data/tuning.json';
 import { Rng } from '../../src/core/rng';
-import type { Player, Position, Stats } from '../../src/data/model';
+import type { Player, Position, Stats, Team } from '../../src/data/model';
 import { FormationsSchema, RulesSchema } from '../../src/data/schema';
 import { AttackDrill, type DefenseStyle } from '../../src/sim/attack/drill';
 import type { PadState } from '../../src/sim/attack/control';
 import type { Slot, Swimmer, TeamSide } from '../../src/sim/attack/types';
 import { fieldFromRules } from '../../src/sim/field';
+import { Match } from '../../src/sim/match/match';
 
 export const field = fieldFromRules(RulesSchema.parse(rulesJson));
 export const formations = FormationsSchema.parse(formationsJson);
@@ -72,6 +73,9 @@ export function makeSwimmer(x: number, y: number, team: TeamSide, stats: Partial
     protectUntil: 0,
     cooldownUntil: 0,
     struggle: 0,
+    anticipation: 0,
+    speedPenalty: 1,
+    contactPressure: 0,
   };
 }
 
@@ -130,4 +134,64 @@ export function untilLive(drill: AttackDrill): void {
 /** Taps the pad in a screen direction like a player would: a few steps out, then release. */
 export function tapPad(drill: AttackDrill, x: number, y: number, steps = 4) {
   return [...run(drill, { x, y }, steps), ...run(drill, {}, 1)];
+}
+
+// ---------------------------------------------------------------------------------------------
+// Full matches
+// ---------------------------------------------------------------------------------------------
+
+export function makeTeam(id: string, stats: Partial<Stats> = {}, style: Team['style'] = 'balanced'): Team {
+  const field: Position[] = ['center', 'wing', 'wing', 'driver', 'driver', 'point', 'center', 'driver'];
+  const players = [...field.map((p) => makePlayer(p, stats)), makePlayer('goalkeeper', stats)];
+  return { id, name: id, code: id.slice(0, 3).toUpperCase(), level: 5, style, inCup: true, emilioTips: [], players, origin: 'provisional' };
+}
+
+export interface MatchOptions {
+  human?: boolean;
+  home?: Partial<Stats>;
+  away?: Partial<Stats>;
+  homeStyle?: Team['style'];
+  awayStyle?: Team['style'];
+  seed?: number | string;
+  periods?: number;
+  periodSeconds?: number;
+  clockSpeed?: number;
+  difficulty?: 'facil' | 'normal' | 'dificil';
+}
+
+export function makeMatch(options: MatchOptions = {}): Match {
+  const home = makeTeam('locales', options.home, options.homeStyle);
+  const away = makeTeam('visitantes', options.away, options.awayStyle);
+  const pick = (team: Team) => ({
+    team,
+    field: team.players.filter((p) => p.position !== 'goalkeeper').slice(0, 6),
+    keeper: team.players.find((p) => p.position === 'goalkeeper') as Player,
+  });
+  return new Match({
+    field,
+    formations,
+    sides: [
+      { ...pick(home), human: options.human ?? false },
+      { ...pick(away), human: false },
+    ],
+    periods: options.periods ?? 4,
+    periodSeconds: options.periodSeconds ?? 480,
+    clockSpeed: options.clockSpeed ?? 3.2,
+    possession: { first: 28, second: 18, clockSpeed: 1.6 },
+    tuning: T,
+    match: tuning.partido,
+    shot: tuning.tiro,
+    keeperTuning: tuning.portero,
+    tilt: TILT,
+    rng: new Rng(options.seed ?? 'partido'),
+    difficulty: options.difficulty ?? 'normal',
+    tapMs: 180,
+    autoSwitch: true,
+  });
+}
+
+export function runMatch(match: Match, pad: Partial<PadState>, n: number) {
+  const events = [];
+  for (let i = 0; i < n; i++) events.push(...match.step({ ...NEUTRAL, ...pad }));
+  return events;
 }
