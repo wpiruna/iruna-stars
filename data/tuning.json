@@ -616,7 +616,18 @@
         "revision": 0.45
       },
       "areaGolMargen": 0.15,
-      "areaGolSalida": 2.4
+      "areaGolSalida": 2.4,
+      "ataque": {
+        "_nota": "Faltas en ataque: el que recibe o aguanta el balón se impulsa en su defensor. 'recibir' es la probabilidad por recepción con un defensor encima (por la Agresividad); el boya la multiplica por 'boya'.",
+        "recibir": 0.02,
+        "boya": 2.5,
+        "poseedorPorSegundo": 0.008
+      },
+      "lenador": {
+        "_nota": "Rasgo Leñador (hoja → Rasgo): multiplica sus faltas en defensa ('faltas') y en ataque ('ataque').",
+        "faltas": 1.5,
+        "ataque": 12
+      }
     },
     "superioridad": {
       "_nota": "Superioridad (6x5) e inferioridad (5x6). 'circulacion' acelera los pases de la IA y 'umbralTiro' le pide mejor ocasión antes de tirar; 'desplazamiento' mueve la zona hacia el balón; 'distanciaPresion' es a qué distancia sale el defensor más cercano al poseedor; 'presionTiro' y 'bloqueo' rebajan lo que molesta una defensa que va con uno menos.",
@@ -632,6 +643,14 @@
         "y": 1.2,
         "llegada": 1.5
       }
+    },
+    "repeticion": {
+      "_nota": "Repetición de cada gol (pedida por Julián): segundos antes del tiro y después del gol que se repiten, velocidad (0,4 = cámara lenta), cuánto se acerca la cámara y cuántos segundos se guardan.",
+      "antes": 0.9,
+      "despues": 0.7,
+      "velocidad": 0.4,
+      "zoom": 1.25,
+      "guardar": 4
     }
   },
   "arbitro": {

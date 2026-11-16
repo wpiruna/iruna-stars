@@ -110,6 +110,7 @@ export function DebugPanel() {
           <button onClick={() => actions.debugCall('exclusionOurs')}>excluir nuestro</button>
           <button onClick={() => actions.debugCall('penaltyFor')}>penalti a favor</button>
           <button onClick={() => actions.debugCall('penaltyAgainst')}>penalti en contra</button>
+          <button onClick={() => actions.debugCall('offensiveFoul')}>falta en ataque</button>
         </div>
       )}
       <div class="debug__row">

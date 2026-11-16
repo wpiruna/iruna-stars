@@ -579,3 +579,79 @@ describe('el balón y la red', () => {
     expect(misses).toBeGreaterThanOrEqual(6);
   });
 });
+
+describe('faltas en ataque', () => {
+  it('pocas en general; muchas más cuando recibe un boya Leñador, y siempre el balón cambia de equipo', { timeout: 120_000 }, () => {
+    const rate = (lenador: boolean) => {
+      let catches = 0;
+      let fouls = 0;
+      let all = 0;
+      for (let i = 0; i < 4; i++) {
+        const match = makeMatch({ seed: `ataque-${i}`, periods: 2, periodSeconds: 240 });
+        // The home centre (the first field player), with the Leñador trait as Ángel has in the sheet.
+        const centre = match.inPlay(0)[0]!;
+        if (lenador) (centre.player as { trait?: string }).trait = 'enforcer';
+        let steps = 0;
+        while (match.phase !== 'fullTime' && steps < 60 * 60 * 6) {
+          const before = match.possession;
+          for (const e of match.step(NEUTRAL)) {
+            if (e.type === 'catch' && e.by === centre && match.boya === centre) catches++;
+            if (e.type !== 'foul' || !e.offensive) continue;
+            expect(e.sanction).toBe('ordinary');
+            expect(e.by.team).toBe(before);
+            expect(e.awarded).toBe(1 - e.by.team);
+            all++;
+            if (e.by === centre) fouls++;
+          }
+          steps++;
+        }
+      }
+      return { catches, fouls, all };
+    };
+    const normal = rate(false);
+    const withLenador = rate(true);
+    // Rare without the trait (well under two per team and match); with it, the centre is called
+    // for a good share of his receptions, and far more often than a centre without it.
+    expect(normal.all / 8).toBeLessThan(2);
+    expect(withLenador.catches).toBeGreaterThan(3);
+    expect(withLenador.fouls / withLenador.catches).toBeGreaterThan(0.15);
+    expect(normal.fouls / Math.max(1, normal.catches)).toBeLessThan(withLenador.fouls / withLenador.catches);
+  });
+});
+
+describe('repetición del gol', () => {
+  it('reproduce lo grabado y, al acabar, el partido sigue exactamente igual que sin repetición', async () => {
+    const { GoalReplay } = await import('../../src/app/replay');
+    const a = makeMatch({ seed: 'repe' });
+    const b = makeMatch({ seed: 'repe' });
+    const replay = new GoalReplay(a.all, a.keepers, a.ball, 4);
+    const frames: { x: number; y: number }[][] = [];
+    for (let i = 0; i < 60 * 12; i++) {
+      replay.record(a.step(NEUTRAL));
+      b.step(NEUTRAL);
+      frames.push(a.all.map((s) => ({ x: s.pos.x, y: s.pos.y })));
+    }
+    const from = replay.frame - 150;
+    expect(replay.start(from, replay.frame, 0.4)).toBe(true);
+    // The first replayed picture is the recorded one.
+    a.all.forEach((s, i) => {
+      expect(s.pos.x).toBeCloseTo(frames[from]![i]!.x, 4);
+      expect(s.pos.y).toBeCloseTo(frames[from]![i]!.y, 4);
+    });
+    let steps = 0;
+    const seen: string[] = [];
+    while (replay.step((e) => seen.push(e.type))) steps++;
+    expect(steps).toBeGreaterThan(300);
+    // Back to live, and the simulation never noticed.
+    for (let i = 0; i < 60 * 8; i++) {
+      a.step(NEUTRAL);
+      b.step(NEUTRAL);
+    }
+    a.all.forEach((s, i) => {
+      expect(s.pos.x).toBe(b.all[i]!.pos.x);
+      expect(s.pos.y).toBe(b.all[i]!.pos.y);
+    });
+    expect(a.ball.pos).toEqual(b.ball.pos);
+    expect(a.score).toEqual(b.score);
+  });
+});

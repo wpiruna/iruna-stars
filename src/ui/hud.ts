@@ -98,6 +98,8 @@ export interface HudState {
   lab: { shots: number; goals: number; saves: number; posts: number; misses: number; last: string } | null;
   attack: HudAttack | null;
   match: HudMatch | null;
+  /** A goal replay is playing. */
+  replay: boolean;
 }
 
 export const emptyHud = (): HudState => ({
@@ -117,6 +119,7 @@ export const emptyHud = (): HudState => ({
   lab: null,
   attack: null,
   match: null,
+  replay: false,
 });
 
 export const hud = createStore<HudState>(emptyHud());

@@ -121,8 +121,16 @@ const PERIOD = ['', '1º', '2º', '3º', '4º', '5º', '6º'];
 
 /** Television scoreboard and what the pad does right now (GDD §4 and §16). */
 function MatchHud() {
-  const { match, device } = useStore(hud);
+  const { match, device, replay } = useStore(hud);
   if (!match) return null;
+  if (replay) {
+    return (
+      <div class="replay-tag">
+        <b>● REPETICIÓN</b>
+        <span>{device === 'touch' ? 'Toca para saltar' : 'Pulsa un botón para saltar'}</span>
+      </div>
+    );
+  }
   const shotUrgent = match.shotClock <= 5 && (match.phase === 'transition' || match.phase === 'positional');
   const label = PAD_LABEL[match.padMode]?.[device];
   return (

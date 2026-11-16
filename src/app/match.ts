@@ -23,6 +23,8 @@ import type { Swimmer } from '../sim/attack/types';
 import type { MatchEvent } from '../sim/match/types';
 import { emptyHud, hud, type BannerTone } from '../ui/hud';
 import { swimActivity } from './ambience';
+import { GoalReplay } from './replay';
+import type { Goal } from '../sim/field';
 import { frameAttack } from './attack';
 import { vibrate } from './platform';
 import type { DebugCall, Session } from './session';
@@ -73,6 +75,12 @@ export class MatchSession implements Session {
   private readonly tags = new Map<Swimmer, string>();
   /** Team of the last shot, to know whose keeper made a save. */
   private lastShooterTeam: 0 | 1 = 0;
+  /** Goal replays (not in the labs): what was recorded, the frame of the last shot, the replay due. */
+  private readonly replay: GoalReplay | null;
+  private lastRelease = -1;
+  private replayDue: { from: number; to: number; goal: Goal } | null = null;
+  private replayGoal: Goal | null = null;
+  private skipHeld = true;
 
   constructor(
     private readonly deps: MatchDeps,
@@ -138,8 +146,12 @@ export class MatchSession implements Session {
       data.tuning.ataque.pase,
       this.rng.fork('view'),
       {
-        hitStop: (frames) => (this.freeze = Math.max(this.freeze, frames)),
+        // During a replay the replay sets the pace.
+        hitStop: (frames) => {
+          if (!this.replay?.playing) this.freeze = Math.max(this.freeze, frames);
+        },
         slowMotion: (scale, seconds) => {
+          if (this.replay?.playing) return;
           this.timeScale = scale;
           this.slowSeconds = seconds;
         },
@@ -149,6 +161,7 @@ export class MatchSession implements Session {
     this.view = this.playView.view;
     // Water always; a crowd only for real matches (the labs are training).
     deps.sfx.startAmbience({ crowd: !lab });
+    this.replay = lab ? null : new GoalReplay(this.match.all, this.match.keepers, this.match.ball, data.tuning.partido.repeticion.guardar);
     hud.set({
       ...emptyHud(),
       mode: 'match',
@@ -213,6 +226,19 @@ export class MatchSession implements Session {
     const field = m.setup.field;
     const ball = m.ball.pos;
     const att = m.attackingSide;
+    if (this.replay?.playing && this.replayGoal) {
+      // Replay: closer, between the ball and the goal it went into.
+      const goal = this.replayGoal;
+      const r = m.setup.match.repeticion;
+      // At least 9 m of pool in view, so a penalty is not too tight.
+      const span = Math.max(9, Math.abs(ball.x - goal.x) + 4);
+      const nearX = goal.x - goal.facing * span;
+      const minX = Math.min(nearX, goal.x + goal.facing * BEHIND_GOAL * 0.5);
+      const maxX = Math.max(nearX, goal.x + goal.facing * BEHIND_GOAL * 0.5);
+      const fit = camera.fit(minX, maxX, Math.min(ball.y, goal.y) - 3.2, Math.max(ball.y, goal.y) + 3.2, 120);
+      camera.frame({ x: (Math.max(Math.min(ball.x, Math.max(nearX, goal.x)), Math.min(nearX, goal.x)) + goal.x) / 2, y: (ball.y + goal.y) / 2, ppm: fit.ppm * r.zoom }, snap);
+      return;
+    }
     switch (m.phase) {
       case 'positional':
         if (att) frameAttack(camera, att.attacks, ball.y, snap);
@@ -276,14 +302,44 @@ export class MatchSession implements Session {
       this.freeze--;
       return;
     }
+    // A goal replay: the match waits; any button skips it.
+    const pressed = input.shot || input.skill || input.touching;
+    if (this.replay?.playing) {
+      if (pressed && !this.skipHeld) this.replay.stop();
+      this.skipHeld = pressed;
+      if (!this.replay.step((event) => this.playView.onEvent(event))) this.endReplay();
+      return;
+    }
     const events = this.match.step({ x: input.x, y: input.y, touching: input.touching, shot: input.shot, skill: input.skill });
+    this.replay?.record(events);
     for (const event of events) this.handle(event);
+    const due = this.replayDue;
+    if (due && this.replay && this.replay.frame >= due.to) {
+      this.replayDue = null;
+      if (this.replay.start(due.from, due.to, this.match.setup.match.repeticion.velocidad)) {
+        this.replayGoal = due.goal;
+        this.skipHeld = pressed;
+        this.timeScale = this.match.setup.match.repeticion.velocidad;
+        this.slowSeconds = 0;
+        this.playView.setReplay(true);
+        this.playView.snapCamera();
+        hud.set({ replay: true });
+      }
+    }
     this.deps.sfx.setAmbience(swimActivity([...this.match.inPlay(0), ...this.match.inPlay(1)]), this.tension(), 1 / 60);
     this.refreshHud();
     if (this.finishTimer >= 0) {
       this.finishTimer -= 1 / 60;
       if (this.finishTimer < 0) this.deps.onFinished();
     }
+  }
+
+  private endReplay(): void {
+    this.timeScale = 1;
+    this.replayGoal = null;
+    this.playView.setReplay(false);
+    this.playView.snapCamera();
+    hud.set({ replay: false });
   }
 
   /** How close a goal feels, for the crowd: a break with a man free, a shot coming, the clock running out. */
@@ -329,6 +385,15 @@ export class MatchSession implements Session {
   debugCall(kind: DebugCall): void {
     const m = this.match;
     if (m.phase !== 'transition' && m.phase !== 'positional') return;
+    if (kind === 'offensiveFoul') {
+      // Whoever has the ball shoves his defender.
+      const holder = m.ball.holder;
+      if (!holder || holder.keeper) return;
+      const defender = m.defenderOf(holder) ?? m.inPlay((1 - holder.team) as 0 | 1)[0];
+      if (!defender) return;
+      for (const event of m.forceCall(holder, defender, 'ordinary', 'EMPUJÓN')) this.handle(event);
+      return;
+    }
     const offenderTeam = kind === 'exclusionRival' || kind === 'penaltyFor' ? 1 : 0;
     const victims = m.inPlay((1 - offenderTeam) as 0 | 1);
     const holder = m.ball.holder;
@@ -434,6 +499,13 @@ export class MatchSession implements Session {
       }
       case 'goal': {
         const ours = event.side === 0;
+        // Replay it in a moment: from just before the shot (or the last seconds) to the ball in the net.
+        if (this.replay) {
+          const r = m.setup.match.repeticion;
+          const now = this.replay.frame;
+          const shot = this.lastRelease >= 0 && now - this.lastRelease < 3 * 60 ? this.lastRelease : now - 60;
+          this.replayDue = { from: shot - r.antes * 60, to: now + r.despues * 60, goal: m.goalOf(event.side) };
+        }
         const scorer = event.scorer ? `Nº ${event.scorer.player.number} ${event.scorer.player.nickname.toUpperCase()}` : 'En propia puerta';
         this.banner('¡GOL!', ours ? 'great' : 'bad', `${scorer} · ${event.score[0]}–${event.score[1]}`);
         sfx.crowd(ours ? 'goalUs' : 'goalThem');
@@ -500,6 +572,7 @@ export class MatchSession implements Session {
         break;
       case 'release':
         this.lastShooterTeam = event.who.team;
+        this.lastRelease = this.replay?.frame ?? -1;
         sfx.play('throw', event.plan.speed / 26);
         if (event.who.team === 0 && save.settings.vibration) vibrate(18);
         break;
@@ -549,7 +622,7 @@ export class MatchSession implements Session {
     const personal = event.personal > 0 ? ` · ${NTH[event.personal] ?? `${event.personal}.ª`} falta` : '';
     // The reason, where the foul was made (the offender carries his countdown).
     const at = event.on?.pos ?? event.by.pos;
-    this.playView.caption(event.motive, ours ? 0xff8b8b : 0xffd23f, { x: at.x, y: at.y - 0.6 }, 1.3);
+    this.playView.caption(event.offensive ? 'FALTA EN ATAQUE' : event.motive, ours ? 0xff8b8b : 0xffd23f, { x: at.x, y: at.y - 0.6 }, 1.3);
     if (event.sanction === 'violent') {
       this.banner('¡ROJA DIRECTA!', tone, `${who(event.by)} · ${event.motive} · penalti y 4 minutos sin sustituto`);
     } else if (event.out && event.card === 'red') {
@@ -564,9 +637,9 @@ export class MatchSession implements Session {
       if (ours && save.settings.vibration) vibrate(40);
     } else if (event.card === 'yellow') {
       this.banner('TARJETA AMARILLA', tone, `${who(event.by)} · ${event.motive}: la próxima es roja`);
-    } else if (event.motive !== 'FALTA') {
-      // Offensive foul or goal area: the ball changes hands.
-      this.banner(event.motive, tone, ours ? 'Falta en ataque: balón para ellos' : 'Falta en ataque: balón nuestro');
+    } else if (event.offensive) {
+      // The team with the ball loses it.
+      this.banner('FALTA EN ATAQUE', tone, `${who(event.by)} · ${event.motive} · ${ours ? 'balón para ellos' : 'balón nuestro'}`);
     }
     if (event.teamWarning) this.banner('AMARILLA AL EQUIPO', tone, 'Demasiadas faltas: la próxima fuerte será roja');
     // The crowd boos the referee when he sends one of ours off, and cheers the other way round.

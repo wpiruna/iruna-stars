@@ -2173,6 +2173,11 @@ export class Match {
     events.push({ type: 'catch', by: receiver, passType });
     const drive = this.drives.get(receiver);
     if (drive) this.finishDrive(drive, drive.phase === 'free' ? 'free' : 'fail', events);
+    // Receiving with a defender on him, he may push off: a foul in attack, the ball to the other team.
+    if (!receiver.keeper && this.receptionFoul(receiver, events)) {
+      this.buffer = null;
+      return;
+    }
     const buffered = this.buffer;
     this.buffer = null;
     if (!buffered || !this.sides[receiver.team].human || receiver.keeper) return;
@@ -2407,9 +2412,16 @@ export class Match {
     return clamp(f.base + f.porAgresividad * barFactor(s.player.stats.aggression) + this.fouls.gauss() * f.ruido, 0, 1);
   }
 
-  /** With probability `chance` (times the aggression) the AI makes the contact. True if whistled. */
+  /** The Leñador trait (sheet → Rasgo): many more fouls, above all in attack. */
+  private traitFouls(s: Swimmer): number {
+    if (s.player.trait !== 'enforcer') return 1;
+    const l = this.m.faltas.lenador;
+    return s.team === this.possession ? l.ataque : l.faltas;
+  }
+
+  /** With probability `chance` (times the aggression and the trait) the AI makes the contact. True if whistled. */
   private maybeFoul(by: Swimmer, on: Swimmer, kind: ContactKind, chance: number, events: MatchEvent[], counter?: boolean): boolean {
-    if (!this.fouls.chance(clamp(chance * this.aggressionRate(by), 0, 1))) return false;
+    if (!this.fouls.chance(clamp(chance * this.aggressionRate(by) * this.traitFouls(by), 0, 1))) return false;
     events.push({ type: 'contact', by, on, strong: true });
     return this.contactFoul(by, on, kind, this.aiIntensity(by), events, counter);
   }
@@ -2517,7 +2529,7 @@ export class Match {
     if (card === 'yellow') stats.yellows++;
     if (card === 'red' || sanction === 'violent') stats.reds++;
     this.human.contact = null;
-    events.push({ type: 'whistle' }, { type: 'foul', sanction, motive, by, on, awarded, card, teamWarning, personal, out });
+    events.push({ type: 'whistle' }, { type: 'foul', sanction, motive, by, on, awarded, card, teamWarning, personal, out, offensive });
 
     const ball = { x: this.ball.pos.x, y: this.ball.pos.y };
     const spot = freeThrowSpot(ball, this.sides[awarded].attacks, !offensive, r);
@@ -2714,7 +2726,23 @@ export class Match {
     const holder = this.ball.holder;
     if (this.phase !== 'positional' || !holder || holder.team !== att.index || holder.keeper || holder.holdTime < 0.6 || this.charging) return;
     const d = this.defenderOf(holder);
-    if (d && this.aiFouls(d) && dist(d.pos, holder.pos) < this.t.defensa.robo.distancia) this.maybeFoul(d, holder, 'hold', f.poseedorPorSegundo * DT, events);
+    if (!d || dist(d.pos, holder.pos) >= this.t.defensa.robo.distancia) return;
+    if (this.aiFouls(d) && this.maybeFoul(d, holder, 'hold', f.poseedorPorSegundo * DT, events)) return;
+    // Or the other way round: holding the ball, he shoves his defender away (foul in attack).
+    this.maybeFoul(holder, d, 'push', f.ataque.poseedorPorSegundo * DT, events);
+  }
+
+  /** Receiving the ball with a defender close, the receiver may push off him (WP 8.2.7). */
+  private receptionFoul(receiver: Swimmer, events: MatchEvent[]): boolean {
+    if (!LIVE.includes(this.phase) || this.setPiece) return false;
+    const reach = this.m.defensa.contacto.distancia;
+    let defender: Swimmer | null = null;
+    for (const d of this.sides[(1 - receiver.team) as TeamSide].field) {
+      if (dist(d.pos, receiver.pos) <= reach && (!defender || dist(d.pos, receiver.pos) < dist(defender.pos, receiver.pos))) defender = d;
+    }
+    if (!defender) return false;
+    const a = this.m.faltas.ataque;
+    return this.maybeFoul(receiver, defender, 'push', a.recibir * (receiver === this.boya ? a.boya : 1), events);
   }
 
   /** The centre turning with the ball: his defender may hang on to him. */

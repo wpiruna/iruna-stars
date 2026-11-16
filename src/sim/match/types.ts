@@ -106,6 +106,8 @@ export type MatchEvent =
       personal: number;
       /** Out for the rest of the match. */
       out: boolean;
+      /** Committed by the team with the ball: the ball goes to the other team. */
+      offensive: boolean;
     }
   | { type: 'heldCall'; on: Swimmer }
   | { type: 'advantagePlayed'; on: Swimmer }

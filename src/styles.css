@@ -1411,6 +1411,36 @@ kbd {
   border: none;
   animation: blink 0.4s steps(2, jump-none) infinite;
 }
+.replay-tag {
+  position: absolute;
+  top: calc(0.9rem + var(--safe-t));
+  left: calc(1rem + var(--safe-l));
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.35rem 0.8rem;
+  background: rgb(4 17 42 / 0.78);
+  border-left: 0.3rem solid var(--red);
+  border-radius: 0.35rem;
+}
+.replay-tag b {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.5rem;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+.replay-tag b::first-letter {
+  color: var(--red);
+}
+.replay-tag span {
+  font-size: 0.95rem;
+  opacity: 0.8;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .replay-tag b::first-letter {
+    animation: blink 1s steps(2, jump-none) infinite;
+  }
+}
 .man-up {
   position: absolute;
   top: calc(4.5rem + var(--safe-t));

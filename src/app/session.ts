@@ -18,4 +18,4 @@ export interface Session {
   debugCall?(kind: DebugCall): void;
 }
 
-export type DebugCall = 'exclusionRival' | 'exclusionOurs' | 'penaltyFor' | 'penaltyAgainst';
+export type DebugCall = 'exclusionRival' | 'exclusionOurs' | 'penaltyFor' | 'penaltyAgainst' | 'offensiveFoul';

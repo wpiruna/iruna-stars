@@ -231,6 +231,12 @@ export class PlayView {
     this.labels.splice(index, 1);
   }
 
+  /** Replay: only the play itself, without the rings, arrows, bars and captions of the live game. */
+  setReplay(on: boolean): void {
+    this.underLayer.visible = !on;
+    this.overlay.visible = !on;
+  }
+
   /** Snaps the camera to its framing (after a cut: restart, new period…). */
   snapCamera(): void {
     this.frame(true);
