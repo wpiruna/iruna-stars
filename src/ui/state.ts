@@ -3,7 +3,7 @@ import type { InputDevice } from '../app/platform';
 import type { QualityLevel } from '../render/quality';
 import { createStore } from './store';
 
-export type ScreenName = 'title' | 'menu' | 'data' | 'settings' | 'install';
+export type ScreenName = 'title' | 'menu' | 'data' | 'settings' | 'install' | 'shootoutSetup' | 'play' | 'shootoutResult';
 
 export interface DebugInfo {
   fps: number;
@@ -16,6 +16,9 @@ export interface DebugInfo {
   ticks: number;
   swimmers: number;
   load: number;
+  /** State of the simulation in play (state machine, charge, last save estimate). */
+  sim: string;
+  seed: string;
 }
 
 export interface UiState {
@@ -46,6 +49,8 @@ export const ui = createStore<UiState>({
     ticks: 0,
     swimmers: 0,
     load: 1,
+    sim: '',
+    seed: '',
   },
 });
 

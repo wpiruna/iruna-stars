@@ -6,10 +6,11 @@ import './styles.css';
 import { startGame } from './app/game';
 
 const gameHost = document.getElementById('game');
+const controlsHost = document.getElementById('controls');
 const uiHost = document.getElementById('ui');
 
-if (gameHost && uiHost) {
-  startGame(gameHost, uiHost).catch((error: unknown) => {
+if (gameHost && controlsHost && uiHost) {
+  startGame(gameHost, controlsHost, uiHost).catch((error: unknown) => {
     console.error(error);
     uiHost.innerHTML =
       '<p class="fatal">No se ha podido arrancar el juego en este navegador. Prueba con Chrome, Safari o Firefox actualizados.</p>';

@@ -1,20 +1,21 @@
 import { useRef } from 'preact/hooks';
 import { Shield } from '../components/Shield';
-import { useApp } from '../context';
+import { useApp, type AppActions } from '../context';
 import { go } from '../state';
 import { Logo } from './Title';
 
 interface Mode {
   title: string;
   text: string;
-  phase: string;
+  /** Phase in which the mode arrives (docs/GDD.md §21), while it is not playable yet. */
+  phase?: string;
+  open?(actions: AppActions): void;
 }
 
-/** Game modes arrive phase by phase (docs/GDD.md §21); until then they are shown as upcoming. */
 const MODES: Mode[] = [
   { title: 'Copa de Euskal Herria', text: 'Cuartos, semifinal y final. Si pierdes, a casa.', phase: 'Fase 6' },
   { title: 'Amistoso', text: 'Elige rival, árbitro y gorro.', phase: 'Fase 5' },
-  { title: 'Tanda de penaltis', text: 'El modo rápido: cinco lanzamientos y muerte súbita.', phase: 'Fase 1' },
+  { title: 'Tanda de penaltis', text: 'Cinco lanzamientos por equipo y muerte súbita.', open: () => go('shootoutSetup') },
 ];
 
 export function Menu() {
@@ -46,10 +47,17 @@ export function Menu() {
         <ul class="menu__modes">
           {MODES.map((mode) => (
             <li>
-              <button class="btn btn--mode" disabled>
+              <button
+                class="btn btn--mode"
+                disabled={!mode.open}
+                onClick={() => {
+                  actions.click();
+                  mode.open?.(actions);
+                }}
+              >
                 <span class="btn__title">{mode.title}</span>
                 <span class="btn__text">{mode.text}</span>
-                <span class="btn__badge">Próximamente · {mode.phase}</span>
+                {mode.phase && <span class="btn__badge">Próximamente · {mode.phase}</span>}
               </button>
             </li>
           ))}
@@ -57,6 +65,9 @@ export function Menu() {
 
         <div class="menu__extras">
           <h2 class="heading">Extras</h2>
+          <button class="btn" onClick={actions.startLab}>
+            Laboratorio de tiro
+          </button>
           <button class="btn" onClick={() => go('data')}>
             Datos del juego
           </button>
@@ -70,7 +81,7 @@ export function Menu() {
       </div>
 
       <footer class="menu__footer" onClick={onBuildTap}>
-        Fase 0 · Base del juego · versión {__BUILD_ID__}
+        Fase 1 · Tiro y portero · versión {__BUILD_ID__}
       </footer>
     </section>
   );

@@ -31,6 +31,8 @@ uniform float uTime;
 uniform vec2 uSize;      // logical pixels covered by the quad
 uniform float uCaustics; // 0 = off, 0.5 = simple, 1 = full
 uniform float uMetre;    // logical pixels per metre
+uniform vec2 uOrigin;    // world position (metres) of the top-left corner of the quad
+uniform float uTilt;     // vertical squash of the tilted camera (1 = straight down)
 
 // Bright, thin, wandering lines: the zero crossings of a few warped sine layers.
 float caustics(vec2 p, float t, float detail) {
@@ -57,7 +59,7 @@ float gridLine(float coord, float width) {
 
 void main() {
   vec2 px = vUV * uSize;
-  vec2 m = px / uMetre; // metres
+  vec2 m = uOrigin + vec2(px.x / uMetre, px.y / (uMetre * uTilt)); // world metres
   float t = uTime;
 
   // Refraction: what lies on the floor is seen displaced by the moving surface.
@@ -99,7 +101,14 @@ void main() {
 
 export class Water {
   readonly view: Mesh<Geometry, Shader>;
-  private readonly uniforms: { uTime: number; uSize: Float32Array; uCaustics: number; uMetre: number };
+  private readonly uniforms: {
+    uTime: number;
+    uSize: Float32Array;
+    uCaustics: number;
+    uMetre: number;
+    uOrigin: Float32Array;
+    uTilt: number;
+  };
   private readonly positions: Float32Array;
 
   constructor() {
@@ -116,6 +125,8 @@ export class Water {
           uSize: { value: new Float32Array([1280, 720]), type: 'vec2<f32>' },
           uCaustics: { value: 1, type: 'f32' },
           uMetre: { value: 55, type: 'f32' },
+          uOrigin: { value: new Float32Array([0, 0]), type: 'vec2<f32>' },
+          uTilt: { value: 1, type: 'f32' },
         },
       },
     });
@@ -139,5 +150,12 @@ export class Water {
     this.uniforms.uTime = seconds % 3600;
     this.uniforms.uCaustics = caustics;
     this.uniforms.uMetre = pixelsPerMetre;
+  }
+
+  /** Anchors the floor pattern to the world, so it scrolls and zooms with the camera. */
+  setView(originX: number, originY: number, tilt: number): void {
+    this.uniforms.uOrigin[0] = originX;
+    this.uniforms.uOrigin[1] = originY;
+    this.uniforms.uTilt = tilt;
   }
 }

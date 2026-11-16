@@ -3,6 +3,7 @@ import { createContext } from 'preact';
 import { useContext } from 'preact/hooks';
 import type { GameData } from '../data/load';
 import type { SaveStore } from '../persist/storage';
+import type { LabSettings } from '../sim/duel/lab';
 
 export interface AppActions {
   /** First tap on the title screen: full screen, audio unlock, etc. */
@@ -12,6 +13,18 @@ export interface AppActions {
   install(): void;
   setLoad(multiplier: number): void;
   toggleDebug(): void;
+  /** Starts a penalty shoot-out against a rival, or the shooting lab. */
+  startShootout(rivalId: string): void;
+  startLab(): void;
+  /** Leaves the game in progress and goes back to the menu. */
+  exitPlay(): void;
+  /** Plays the same mode again from the start. */
+  restartPlay(): void;
+  setPaused(paused: boolean): void;
+  configureLab(settings: LabSettings): void;
+  resetLabStats(): void;
+  /** Short confirmation blip for menu buttons. */
+  click(): void;
 }
 
 export interface AppContext {

@@ -80,12 +80,19 @@ export function DebugPanel() {
         </dd>
         <dt>entrada</dt>
         <dd>{DEVICE_LABEL[state.device]}</dd>
+        {info.seed && (
+          <>
+            <dt>semilla</dt>
+            <dd>{info.seed}</dd>
+          </>
+        )}
         <dt>build</dt>
         <dd>
           {__BUILD_ID__}
           {__SINGLE_FILE__ ? ' · HTML único' : ' · web'}
         </dd>
       </dl>
+      {info.sim && <p class="debug__sim">{info.sim}</p>}
       <div class="debug__row">
         <span>Calidad</span>
         {QUALITY_CHOICES.map((choice) => (

@@ -12,6 +12,8 @@ import clubJson from '../../data/generado/club.json';
 import statusJson from '../../data/generado/estado.json';
 import rulesOverrideJson from '../../data/generado/reglas.ajustes.json';
 import rulesJson from '../../data/reglas.json';
+import emilioJson from '../../data/textos/emilio.json';
+import humorJson from '../../data/textos/humor.json';
 import tuningJson from '../../data/tuning.json';
 import { toClub, toPlayer, toReferee, toRivalTeam, type Club, type Referee, type Team } from './model';
 import {
@@ -65,6 +67,24 @@ export function applyRulesOverride(base: RulesData, override: RulesOverride): Ru
   return rules;
 }
 
+export interface Phrase {
+  /** Team ID, referee ID or player dorsal this phrase is for; empty = anyone. */
+  target: string;
+  text: string;
+}
+
+type RawPhrases = Record<string, { para?: string; frase?: string }[] | undefined>;
+
+function phrasesOf(...sources: RawPhrases[]): Record<string, Phrase[]> {
+  const out: Record<string, Phrase[]> = {};
+  for (const source of sources) {
+    for (const [type, list] of Object.entries(source)) {
+      out[type] = (list ?? []).flatMap((item) => (item.frase ? [{ target: item.para ?? '', text: item.frase }] : []));
+    }
+  }
+  return out;
+}
+
 export interface GameData {
   club: Club;
   ourTeam: Team;
@@ -74,7 +94,18 @@ export interface GameData {
   rules: RulesData;
   formations: FormationsData;
   tuning: typeof tuningJson;
+  /** Humour and Emilio's lines by type (`victoria`, `derrota`, `gol`, `emilio_previa`…). */
+  phrases: Record<string, Phrase[]>;
   status: DataStatus;
+}
+
+/** A line of the given type, preferring the ones written for this target. `{rival}` is filled in. */
+export function pickPhrase(data: GameData, type: string, random: () => number, target = '', rival = ''): string {
+  const all = data.phrases[type] ?? [];
+  const specific = all.filter((p) => p.target !== '' && p.target === target);
+  const pool = specific.length > 0 ? specific : all.filter((p) => p.target === '');
+  const chosen = pool[Math.floor(random() * pool.length)];
+  return chosen ? chosen.text.replaceAll('{rival}', rival) : '';
 }
 
 export function loadGameData(): GameData {
@@ -111,6 +142,7 @@ export function loadGameData(): GameData {
     rules,
     formations: checked('formaciones.json', FormationsSchema, formationsJson),
     tuning: tuningJson,
+    phrases: phrasesOf(humorJson as RawPhrases, emilioJson as RawPhrases),
     status: checked('estado.json', DataStatusSchema, statusJson),
   };
 }
