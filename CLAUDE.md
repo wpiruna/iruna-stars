@@ -35,7 +35,16 @@ Al parar servidores de prueba no usar `pkill -f` con un patrón que también apa
 misma. Mejor `kill` con el número de proceso.
 
 Para probar en el navegador sin pantalla: el service worker cachea la versión anterior, así que hay que
-saltárselo (DevTools: `Network.setBypassServiceWorker`) o se estará mirando un build viejo.
+saltárselo (DevTools: `Network.setBypassServiceWorker`) o se estará mirando un build viejo. `tools/navegador/cdp.mjs`
+lo hace solo: `google-chrome --headless=new --no-sandbox --use-angle=swiftshader --enable-unsafe-swiftshader
+--remote-debugging-port=9337 --user-data-dir=<carpeta temporal>` y luego
+`node --experimental-websocket tools/navegador/cdp.mjs 9337 <url> <pasos.json>` (pasos: size, mobile, wait, down/up de
+teclas, shot, eval). Sin tarjeta gráfica va a ~9 fps: la simulación corre más lenta que en un móvil.
+
+Escribir en la hoja de Julián: `python3 -I tools/datos/escribir-hoja.py datos/plantilla.ods valores.json copia.ods`
+cambia solo las celdas pedidas (barras 1–10 y *Rasgo* de la pestaña Jugadores, por dorsal) y conserva estilos y
+desplegables; comprobar la copia con el lector del juego (`tools/datos/leer-hoja.ts`) antes de sustituir la hoja, y
+mirar que no exista `datos/.~lock.plantilla.ods#` (la tiene abierta).
 
 ## Estructura
 
@@ -133,6 +142,10 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
 - F3 aprobada («de momento está todo muy bien»). Julián pidió **2 periodos de 6 minutos** de marcador (4 de 8 era
   demasiado largo), con el reloj a la misma velocidad (3,2×): está en `reglas.json`; el GDD sigue diciendo 4 de 8.
   El botón del menú se llama **«Entrenamiento del jueves»**.
+- **Pendiente**: Julián está puntuando las barras de los 19 jugadores en una página con botones
+  (https://claude.ai/artifact/J6LxEjtBgqi5DNsZucuCin, colección `barras`, un documento `jugador-NN` con `valores`).
+  Cuando diga «ya está»: leerla con ArtifactData, escribirla con `tools/datos/escribir-hoja.py`, `npm run datos`,
+  comprobar y publicar. A Ángel (2) ya se le puso el rasgo Leñador en la hoja.
 - Ritmo pedido por Julián tras probar la F4: transiciones rápidas y pocas pérdidas en ellas; **unas 2 de cada 3
   posesiones deben llegar al ataque en estático** (arco formado, ataque y defensa) con tiempo de posesión, y 1 de cada
   3 puede ser contra o robo. En la transición todos nadan más rápido, se roba menos y los defensores que vuelven
