@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import tuning from '../../data/tuning.json';
 import type { PadState } from '../../src/sim/attack/control';
 import { passRisk } from '../../src/sim/attack/passing';
 import { MatchInput, type ControlContext, type MatchIntent } from '../../src/sim/match/input';
@@ -505,25 +506,28 @@ describe('árbitro en el partido', () => {
     }
   });
 
-  it('IA contra IA: con un árbitro estricto hay más exclusiones que con uno permisivo', { timeout: 120_000 }, () => {
-    const exclusions = (referee: { contactTolerance: number; exclusionTendency: number }) => {
-      let total = 0;
-      for (let i = 0; i < 3; i++) {
+  it('IA contra IA: un árbitro estricto pita más exclusiones por cada contacto que uno permisivo', { timeout: 120_000 }, () => {
+    const whistled = (referee: { contactTolerance: number; exclusionTendency: number }) => {
+      let contacts = 0;
+      let exclusions = 0;
+      for (let i = 0; i < 4; i++) {
         const match = makeMatch({ seed: `arbitro-${i}`, periods: 2, periodSeconds: 240, referee, home: { aggression: 8 }, away: { aggression: 8 } });
         let steps = 0;
         while (match.phase !== 'fullTime' && steps < 60 * 60 * 6) {
-          match.step(NEUTRAL);
+          for (const e of match.step(NEUTRAL)) {
+            if (e.type === 'contact') contacts++;
+            if (e.type === 'foul' && e.sanction === 'exclusion') exclusions++;
+          }
           steps++;
         }
         expect(match.phase).toBe('fullTime');
-        total += match.stats[0].exclusions + match.stats[1].exclusions;
       }
-      return total;
+      return { contacts, exclusions, rate: exclusions / Math.max(1, contacts) };
     };
-    const strict = exclusions({ contactTolerance: 2, exclusionTendency: 8 });
-    const loose = exclusions({ contactTolerance: 9, exclusionTendency: 3 });
-    expect(strict).toBeGreaterThan(loose);
-    expect(strict).toBeGreaterThan(3);
+    const strict = whistled({ contactTolerance: 2, exclusionTendency: 8 });
+    const loose = whistled({ contactTolerance: 9, exclusionTendency: 3 });
+    expect(strict.exclusions).toBeGreaterThan(3);
+    expect(strict.rate).toBeGreaterThan(loose.rate * 1.3);
   });
 
   it('laboratorio de superioridad: 6 contra 5 una y otra vez', () => {
@@ -581,12 +585,12 @@ describe('el balón y la red', () => {
 });
 
 describe('faltas en ataque', () => {
-  it('pocas en general; muchas más cuando recibe un boya Leñador, y siempre el balón cambia de equipo', { timeout: 120_000 }, () => {
+  it('pocas en general; muchas más cuando recibe un boya Leñador, y siempre el balón cambia de equipo', { timeout: 180_000 }, () => {
     const rate = (lenador: boolean) => {
       let catches = 0;
       let fouls = 0;
       let all = 0;
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 12; i++) {
         const match = makeMatch({ seed: `ataque-${i}`, periods: 2, periodSeconds: 240 });
         // The home centre (the first field player), with the Leñador trait as Ángel has in the sheet.
         const centre = match.inPlay(0)[0]!;
@@ -595,7 +599,11 @@ describe('faltas en ataque', () => {
         while (match.phase !== 'fullTime' && steps < 60 * 60 * 6) {
           const before = match.possession;
           for (const e of match.step(NEUTRAL)) {
-            if (e.type === 'catch' && e.by === centre && match.boya === centre) catches++;
+            // Only receptions with a defender on him: the ones where a push can happen.
+            if (e.type === 'catch' && e.by === centre && match.boya === centre) {
+              const marked = match.inPlay(1).some((d) => Math.hypot(d.pos.x - centre.pos.x, d.pos.y - centre.pos.y) <= tuning.partido.defensa.contacto.distancia);
+              if (marked) catches++;
+            }
             if (e.type !== 'foul' || !e.offensive) continue;
             expect(e.sanction).toBe('ordinary');
             expect(e.by.team).toBe(before);
@@ -612,9 +620,9 @@ describe('faltas en ataque', () => {
     const withLenador = rate(true);
     // Rare without the trait (well under two per team and match); with it, the centre is called
     // for a good share of his receptions, and far more often than a centre without it.
-    expect(normal.all / 12).toBeLessThan(2);
-    expect(withLenador.catches).toBeGreaterThan(5);
-    expect(withLenador.fouls / withLenador.catches).toBeGreaterThan(0.12);
+    expect(normal.all / 24).toBeLessThan(2);
+    expect(withLenador.catches).toBeGreaterThan(10);
+    expect(withLenador.fouls / withLenador.catches).toBeGreaterThan(0.15);
     expect(normal.fouls / Math.max(1, normal.catches)).toBeLessThan(withLenador.fouls / withLenador.catches);
   });
 });
@@ -653,5 +661,65 @@ describe('repetición del gol', () => {
     });
     expect(a.ball.pos).toEqual(b.ball.pos);
     expect(a.score).toEqual(b.score);
+  });
+});
+
+describe('solo ante el portero', () => {
+  /** Our player alone with the ball at 9 m, a defender a stroke behind him, the rest far away. */
+  function breakaway(behind: number): Match {
+    const base = makeMatch({ seed: 'solo', human: true });
+    const match = new (base.constructor as typeof import('../../src/sim/match/match').Match)({
+      ...base.setup,
+      sides: [
+        { ...base.setup.sides[0], field: base.setup.sides[0].field.slice(0, 2) },
+        { ...base.setup.sides[1], field: base.setup.sides[1].field.slice(0, 1) },
+      ],
+      counter: { attackers: 2, defenders: 1 },
+    });
+    const goal = match.goalOf(0);
+    const holder = match.ball.holder!;
+    holder.pos = { x: goal.x - goal.facing * 9, y: goal.y + 0.5 };
+    holder.prev = { ...holder.pos };
+    const mate = match.inPlay(0).find((s) => s !== holder)!;
+    mate.pos = { x: goal.x - goal.facing * 16, y: goal.y + 6 };
+    const defender = match.inPlay(1)[0]!;
+    defender.pos = { x: holder.pos.x - goal.facing * behind, y: holder.pos.y + 0.3 };
+    defender.prev = { ...defender.pos };
+    return match;
+  }
+
+  it('si nadie le tapa, sigue nadando hasta cerca del portero en vez de quedarse parado en los 5 m', () => {
+    for (const behind of [0.5, 2.5]) {
+      const match = breakaway(behind);
+      const goal = match.goalOf(0);
+      let closest = Infinity;
+      // A fresh press once the play is on (a press from before would not count).
+      runMatch(match, {}, 5);
+      for (let i = 0; i < 60 * 6 && match.ball.holder?.team === 0 && closest > 2.8; i++) {
+        match.step({ ...NEUTRAL, x: 1, touching: true });
+        const h = match.ball.holder;
+        if (h) closest = Math.min(closest, Math.abs(h.pos.x - goal.x));
+      }
+      // He got close to the keeper still on the break, and shoots from there.
+      expect(closest).toBeLessThan(3);
+      expect(match.phase).toBe('transition');
+      expect(match.padMode).toBe('swim');
+      const shot = [...runMatch(match, {}, 2), ...runMatch(match, { shot: true }, 20), ...runMatch(match, {}, 60)];
+      expect(types(shot)).toContain('release');
+    }
+  });
+
+  it('no se mete encima del portero: frena a un par de metros', () => {
+    const match = breakaway(6);
+    const goal = match.goalOf(0);
+    runMatch(match, {}, 5);
+    let closest = Infinity;
+    for (let i = 0; i < 60 * 6 && match.ball.holder?.team === 0; i++) {
+      match.step({ ...NEUTRAL, x: 1, touching: true });
+      const h = match.ball.holder;
+      if (h) closest = Math.min(closest, Math.abs(h.pos.x - goal.x));
+    }
+    expect(closest).toBeGreaterThan(1.7);
+    expect(closest).toBeLessThan(2.8);
   });
 });

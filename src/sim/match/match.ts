@@ -1236,6 +1236,9 @@ export class Match {
       a.speedScale = this.t.escapada.impulso / a.topSpeed;
     } else if (this.sides[a.team].human && this.carrySwim && !this.charging) {
       a.target = add(a.pos, this.carrySwim, 2);
+      // In front of the keeper he slows down and stops a couple of metres out, to shoot or pass.
+      const near = toGoal(goal, a.target);
+      if (near.distance < this.m.transicion.solo.cerca) a.target = fromGoal(goal, this.m.transicion.solo.cerca, near.lateral);
       a.speedScale = this.m.transicion.conBalon;
       a.desiredFacing = Math.atan2(this.carrySwim.y, this.carrySwim.x);
       return;
@@ -1243,7 +1246,9 @@ export class Match {
       // AI on the break: down its lane towards the 5 m.
       const here = toGoal(goal, a.pos);
       const tr = this.m.transicion;
-      a.target = fromGoal(goal, Math.max(4.5, here.distance - 3), clamp(here.lateral, -tr.carrilMax, tr.carrilMax));
+      // Alone in front of the keeper he swims in close; otherwise he stops around the 5 m.
+      const stop = this.throughOnGoal(a) ? tr.solo.cerca : 4.5;
+      a.target = fromGoal(goal, Math.max(stop, here.distance - 3), clamp(here.lateral, -tr.carrilMax, tr.carrilMax));
       a.speedScale = tr.conBalon;
     } else {
       a.target = { ...a.pos };
@@ -1356,6 +1361,11 @@ export class Match {
     if (this.advantage) this.advantageEndedAt = this.time;
     if (!raw) this.advantageSince = -1;
     this.advantage = null;
+    // Through on goal with nobody in front: the break goes on until he gets close to the keeper.
+    if (this.throughOnGoal(holder)) {
+      this.settleSince = -1;
+      return;
+    }
     const close = distance < tr.distanciaPosicional;
     const long = this.crossedHalfAt >= 0 && this.time - this.crossedHalfAt >= tr.segundosTrasMedio;
     const settled = distance < this.setup.field.length / 2 && defenceSettled(def.field, tr.llegada);
@@ -2470,6 +2480,14 @@ export class Match {
     return false;
   }
 
+  /** The player with the ball is alone in front of the keeper: no field defender is nearer the goal than he is. */
+  throughOnGoal(holder: Swimmer | null): boolean {
+    if (!holder || holder.keeper) return false;
+    const goal = this.sides[holder.team].attacks;
+    const here = toGoal(goal, holder.pos).distance;
+    return this.sides[(1 - holder.team) as TeamSide].field.every((d) => toGoal(goal, d.pos).distance >= here - 0.3);
+  }
+
   /** A break with more attackers than defenders is on: stopping it is a tactical foul (WP 10.1.5). */
   private get breakOn(): boolean {
     return this.phase === 'transition' && (this.advantage !== null || this.advantageSince >= 0);
@@ -2523,7 +2541,8 @@ export class Match {
     const h = this.heldCall;
     if (!h) return;
     this.heldCall = null;
-    this.applyCall(h.by, h.on, h.sanction, h.motive, h.card, h.teamWarning, events);
+    // Only defensive fouls are held for the advantage.
+    this.applyCall(h.by, h.on, h.sanction, h.motive, h.card, h.teamWarning, events, false);
   }
 
   /** The whistle: personal fouls, cards, and the throw, exclusion or penalty that follows. */
@@ -2535,10 +2554,11 @@ export class Match {
     card: 'yellow' | 'red' | null,
     teamWarning: boolean,
     events: MatchEvent[],
+    /** Committed by the team with the ball, as it was when the foul was made (a held call is whistled later). */
+    offensive = by.team === this.possession,
   ): void {
     const r = this.setup.rules;
     const awarded = (1 - by.team) as TeamSide;
-    const offensive = by.team === this.possession;
     let personal = this.personal.get(by) ?? 0;
     if (isPersonal(sanction)) personal++;
     this.personal.set(by, personal);
@@ -2806,7 +2826,7 @@ export class Match {
       this.areaTime.set(a, t);
       if (t >= this.m.faltas.areaGolSegundos) {
         this.areaTime.clear();
-        this.applyCall(a, null, 'ordinary', '2 METROS', null, false, events);
+        this.applyCall(a, null, 'ordinary', '2 METROS', null, false, events, true);
         return;
       }
     }

@@ -425,7 +425,7 @@
       "peligro": 3,
       "profundidad": 2.8,
       "carrilMax": 3,
-      "conBalon": 0.95,
+      "conBalon": 0.9,
       "ventajaDesde": 9,
       "libre": 2.2,
       "ventajaMinima": 0.4,
@@ -437,7 +437,11 @@
       "recogida": 8.0,
       "colchon": 2.0,
       "colchonPoseedor": 1.5,
-      "reaccionPerdida": 0.6
+      "reaccionPerdida": 0.45,
+      "solo": {
+        "_nota": "Solo ante el portero: mientras ningún defensor de campo esté más cerca de la portería que el que lleva el balón, sigue el contraataque; puede nadar hasta 'cerca' m de la portería, donde frena; la IA nada hasta ahí antes de tirar.",
+        "cerca": 2.4
+      }
     },
     "saque": {
       "preparacion": 0.9,

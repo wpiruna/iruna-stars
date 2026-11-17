@@ -143,7 +143,10 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
 - El árbitro nunca inventa ni agrava: solo pita lo que clasifica `rules` (o algo más leve). El sesgo es ±12/8 % por
   punto con tope de 0,25. Hay tests de Monte Carlo (`tests/unit/arbitro.test.ts`): no romper esas bandas.
 - Equilibrio F4 (`npm run sim`, 2 periodos de 6 min): ~3,5 goles por equipo, ~2 exclusiones por equipo, ~0,25 penaltis,
-  superioridad ~35 % de gol, ~70 % de posesiones al estático con ~22 s de posesión.
+  superioridad ~35 % de gol, ~63 % de posesiones al estático con ~23 s de posesión.
+- Solo ante el portero (`throughOnGoal`): mientras ningún defensor de campo esté más cerca de la portería que el que
+  lleva el balón, el contraataque NO se asienta; puede nadar hasta `transicion.solo.cerca` (2,4 m), donde frena. En
+  posicional el que lleva el balón no nada ([FIJO] 3), así que asentar antes de tiempo le deja clavado.
 - Repliegue pedido por Julián: en la transición los defensores NO salen a por los atacantes al medio campo. Vuelven a su
   sitio en la defensa estática y recogen a su hombre al llegar, siempre del lado de su portería (esperan en la línea de
   recogida, ~8 m, y acompañan a ~2 m; `partido.transicion.recogida`, `colchon`, `colchonPoseedor`). Tras perder el
