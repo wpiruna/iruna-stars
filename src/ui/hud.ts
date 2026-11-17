@@ -1,5 +1,6 @@
 /** What the in-game HUD shows. The play session writes it; the HUD components only read. */
 import type { InputDevice } from '../app/platform';
+import type { Position } from '../data/model';
 import { createStore } from './store';
 
 export interface HudTeam {
@@ -75,6 +76,21 @@ export interface HudMatch {
   stats: [HudMatchStats, HudMatchStats] | null;
 }
 
+/** The headline of a goal in a match (GDD §16, "rótulo de gol"): who scored and the new score. */
+export interface HudGoal {
+  /** Changes with every goal so the animation starts again. */
+  id: number;
+  /** Scored by us. */
+  ours: boolean;
+  /** Null for an own goal. */
+  scorer: { number: number; nickname: string; position: Position; photo?: string; keeper: boolean } | null;
+  /** His goals in this match, this one included. */
+  tally: number;
+  score: [number, number];
+  /** Going away: the exit animation is playing. */
+  leaving: boolean;
+}
+
 export interface HudState {
   mode: 'shootout' | 'lab' | 'attack' | 'match' | null;
   teams: [HudTeam, HudTeam] | null;
@@ -100,6 +116,7 @@ export interface HudState {
   match: HudMatch | null;
   /** A goal replay is playing. */
   replay: boolean;
+  goal: HudGoal | null;
 }
 
 export const emptyHud = (): HudState => ({
@@ -120,6 +137,7 @@ export const emptyHud = (): HudState => ({
   attack: null,
   match: null,
   replay: false,
+  goal: null,
 });
 
 export const hud = createStore<HudState>(emptyHud());

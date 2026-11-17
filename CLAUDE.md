@@ -182,5 +182,13 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
 - Tras un gol el balón se queda dentro de la red (`keepInNet` en `src/sim/shooting/trajectory.ts`, común al partido,
   al entrenamiento y a la tanda); un tiro que no es gol acaba fuera. Hay un test con partidos reales.
 - Ambiente pedido por Julián: agua y público de fondo «sin ser molesto» (Ajustes → Ambiente: normal, bajo, sin). Niveles
-  medidos con un render sin altavoces: fondo ≈ −41 dBFS (−36 en una contra), efectos ≈ −32, gol nuestro ≈ −27, silbato
-  ≈ −23. Si se toca, que el fondo quede siempre por debajo de los efectos. El entrenamiento no tiene público.
+  medidos con un render sin altavoces (OfflineAudioContext en Chrome sin pantalla, RMS): fondo en ataque estático
+  ≈ −44 dBFS, −36 en una contra, efectos ≈ −32, silbato ≈ −26 (pico −23), pitido de gol ≈ −25, gol nuestro con pitido
+  ≈ −25 y luego aplauso ≈ −31…−34 durante unos 5 s. Si se toca, que el fondo quede siempre por debajo de los efectos.
+  El entrenamiento no tiene público.
+- Agua según cuánto se nada (Julián): `swimActivity` es la media de velocidades al cuadrado sobre 1,9² (≈ 1 en la contra,
+  < 0,15 en el estático asentado; hay un test con partidos reales); `Sfx` la suaviza (sube en 0,3 s, baja en 1,1 s).
+- Gol en partido (Julián): pitido largo del árbitro 0,3 s después y rótulo arriba (`hud.goal`, `GoalHeadline` en
+  `Play.tsx`) que sustituye al marcador hasta que acaba la repetición: cromo con la foto especial (la segunda) si es
+  nuestro, escudo si es del rival, «N.º GOL» si repite. El público aplaude toda la repetición. Los laboratorios
+  conservan el rótulo central.

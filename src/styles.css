@@ -1441,6 +1441,243 @@ kbd {
     animation: blink 1s steps(2, jump-none) infinite;
   }
 }
+
+/* Goal headline: ¡GOOOL!, the scorer's card and the new score, in the scoreboard's place. */
+.goal-head {
+  --accent: var(--yellow);
+  position: absolute;
+  top: calc(0.6rem + var(--safe-t));
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 0.55rem 1.2rem 0.55rem 0.7rem;
+  white-space: nowrap;
+  background: linear-gradient(100deg, rgb(4 17 42 / 0.95) 0%, rgb(11 42 92 / 0.95) 100%);
+  border-bottom: 0.3rem solid var(--accent);
+  border-radius: 0.6rem;
+  box-shadow: 0 0.3rem 0 rgb(4 17 42 / 0.6);
+  overflow: hidden;
+  transform: translateX(-50%);
+  animation: goal-head-in 0.5s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.goal-head--theirs {
+  --accent: #ff8b8b;
+  background: linear-gradient(100deg, rgb(4 17 42 / 0.95) 0%, rgb(42 14 30 / 0.95) 100%);
+}
+.goal-head--leaving {
+  animation: goal-head-out 0.35s ease-in both;
+}
+/* A glint that sweeps across now and then. */
+.goal-head::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.2) 50%, transparent 65%);
+  transform: translateX(-100%);
+  animation: goal-glint 2.6s 0.5s ease-in-out infinite;
+  pointer-events: none;
+}
+.goal-head__card {
+  --tint: var(--blue);
+  position: relative;
+  flex: none;
+  width: 5.6rem;
+  padding: 0.22rem;
+  background: linear-gradient(170deg, #fdfdfd 0%, #dfe8f7 100%);
+  border-radius: 0.45rem;
+  box-shadow: 0 0.2rem 0 rgb(4 17 42 / 0.7);
+  transform: rotate(-4deg);
+  animation: goal-card 0.6s 0.12s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.goal-head__card .portrait {
+  border: 0.14rem solid var(--tint);
+  border-radius: 0.3rem;
+  overflow: hidden;
+}
+.goal-head__card--goalkeeper {
+  --tint: var(--red);
+}
+.goal-head__card--center {
+  --tint: #7a3fd1;
+}
+.goal-head__card--wing {
+  --tint: #0f9b76;
+}
+.goal-head__card--point {
+  --tint: #d97a12;
+}
+.goal-head__card--shield {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+.goal-head__number {
+  position: absolute;
+  left: 0.22rem;
+  top: 0.22rem;
+  min-width: 1.9rem;
+  padding: 0 0.3rem 0.05rem;
+  font-family: var(--display);
+  font-size: 1.45rem;
+  line-height: 1.15;
+  text-align: center;
+  color: #fff;
+  background: var(--tint);
+  border-top-left-radius: 0.3rem;
+  border-bottom-right-radius: 0.45rem;
+}
+.goal-head__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.goal-head__title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 4.6rem;
+  line-height: 0.95;
+  color: var(--accent);
+  -webkit-text-stroke: 0.06em var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0 0.07em 0 var(--ink);
+  transform: skewX(-9deg);
+  transform-origin: left center;
+  animation:
+    goal-title 0.55s 0.08s cubic-bezier(0.2, 1.5, 0.4, 1) both,
+    goal-beat 0.45s 0.9s ease-in-out 6 alternate;
+}
+.goal-head--theirs .goal-head__title {
+  font-size: 3.8rem;
+}
+.goal-head__name {
+  max-width: 17rem;
+  margin-top: 0.15rem;
+  font-family: var(--display);
+  font-size: 2rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: goal-slide 0.4s 0.3s ease-out both;
+}
+.goal-head__name b {
+  font-weight: 400;
+  color: var(--cyan);
+}
+.goal-head__meta {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  animation: goal-slide 0.4s 0.4s ease-out both;
+}
+.goal-head__score {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: center;
+  padding: 0.3rem 0.8rem;
+  color: var(--ink);
+  background: var(--yellow);
+  border-radius: 0.45rem;
+  transform: skewX(-7deg);
+  animation: goal-slide 0.4s 0.5s ease-out both;
+}
+.goal-head__score b {
+  min-width: 1.5rem;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 2.5rem;
+  line-height: 1;
+  text-align: center;
+}
+.goal-head__score i {
+  font-family: var(--display);
+  font-style: normal;
+  font-size: 1.6rem;
+}
+/* The number that has just gone up. */
+.goal-head__new {
+  animation: goal-new 0.5s 0.8s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+@keyframes goal-head-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-130%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+@keyframes goal-head-out {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-130%);
+  }
+}
+@keyframes goal-glint {
+  0% {
+    transform: translateX(-100%);
+  }
+  35%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+@keyframes goal-card {
+  0% {
+    opacity: 0;
+    transform: perspective(30rem) rotateY(100deg) rotate(-4deg) scale(0.6);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(30rem) rotateY(0deg) rotate(-4deg) scale(1);
+  }
+}
+@keyframes goal-title {
+  0% {
+    opacity: 0;
+    transform: skewX(-9deg) scale(1.9);
+  }
+  100% {
+    opacity: 1;
+    transform: skewX(-9deg) scale(1);
+  }
+}
+@keyframes goal-beat {
+  to {
+    transform: skewX(-9deg) scale(1.05);
+  }
+}
+@keyframes goal-slide {
+  0% {
+    opacity: 0;
+    transform: translateX(2rem);
+  }
+}
+@keyframes goal-new {
+  0% {
+    transform: scale(2.2);
+    color: #fff;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes goal-fade {
+  0% {
+    opacity: 0;
+  }
+}
 .man-up {
   position: absolute;
   top: calc(4.5rem + var(--safe-t));
@@ -1884,7 +2121,20 @@ kbd {
   .screen,
   .title__start,
   .logo__main::after,
-  .rotate__phone {
+  .rotate__phone,
+  .goal-head::after,
+  .goal-head__card,
+  .goal-head__title,
+  .goal-head__name,
+  .goal-head__meta,
+  .goal-head__score,
+  .goal-head__new {
     animation: none;
+  }
+  .goal-head {
+    animation: goal-fade 0.3s both;
+  }
+  .goal-head--leaving {
+    animation: goal-fade 0.3s reverse both;
   }
 }

@@ -7,7 +7,7 @@
  * reacts to goals, saves, the post and the referee. It is kept low on purpose.
  */
 
-export type SoundName = 'whistle' | 'throw' | 'splash' | 'post' | 'net' | 'save' | 'cheer' | 'groan' | 'horn' | 'click' | 'charge';
+export type SoundName = 'whistle' | 'goalWhistle' | 'throw' | 'splash' | 'post' | 'net' | 'save' | 'cheer' | 'groan' | 'horn' | 'click' | 'charge';
 
 /** What the crowd reacts to. "Us" is always our team. */
 export type CrowdMoment =
@@ -24,6 +24,7 @@ export type CrowdMoment =
 
 interface AmbienceNodes {
   bus: GainNode;
+  /** How loud the water is (it follows the swimming); the slow swell rides on `surface`. */
   water: GainNode;
   spray: GainNode;
   crowd: GainNode | null;
@@ -31,6 +32,14 @@ interface AmbienceNodes {
 }
 
 const clamp01 = (x: number): number => Math.min(1, Math.max(0, x));
+
+/** Level of the water with nobody swimming and with everybody sprinting (the old loudest). */
+const WATER_STILL = 0.018;
+const WATER_SPRINT = 0.07;
+/** Peak of the applause for one of our goals. */
+const APPLAUSE_GOAL = 0.16;
+/** The long goal whistle holds its level, so it starts a little lower than the short one. */
+const GOAL_WHISTLE = 0.085;
 
 export class Sfx {
   enabled = true;
@@ -49,6 +58,8 @@ export class Sfx {
   private ducked = false;
   private strokeClock = 0;
   private ambienceTick = 0;
+  /** The swimming, smoothed: it rises quickly with a sprint and settles slowly with the attack. */
+  private activity = 0;
 
   /** Browsers only allow audio after a user gesture: call this from the first tap or key. */
   unlock(): void {
@@ -98,6 +109,8 @@ export class Sfx {
     if (!ctx || !master) return;
     try {
       this.bed ??= this.makeNoise(ctx, 4);
+      // Baked now, while the match is being set up, not at the first goal (a hitch on a phone).
+      if (options.crowd) this.applauseBuffer ??= this.makeApplause(ctx);
       const now = ctx.currentTime;
       const bus = ctx.createGain();
       bus.gain.setValueAtTime(0.0001, now);
@@ -107,18 +120,20 @@ export class Sfx {
 
       // Water: a low wash that swells slowly like the surface, and a hiss of spray with the swimming.
       const water = ctx.createGain();
-      water.gain.value = 0.04;
+      water.gain.value = WATER_STILL;
+      const surface = ctx.createGain();
+      surface.gain.value = 1;
       const waterSource = this.loopSource(ctx, this.bed);
       const low = this.filter(ctx, 'lowpass', 620, 0.5);
-      waterSource.connect(low).connect(water).connect(bus);
+      waterSource.connect(low).connect(surface).connect(water).connect(bus);
       const spray = ctx.createGain();
       spray.gain.value = 0;
       waterSource.connect(this.filter(ctx, 'bandpass', 2300, 0.7)).connect(spray).connect(bus);
       const swell = ctx.createOscillator();
       swell.frequency.value = 0.17;
       const swellDepth = ctx.createGain();
-      swellDepth.gain.value = 0.015;
-      swell.connect(swellDepth).connect(water.gain);
+      swellDepth.gain.value = 0.3;
+      swell.connect(swellDepth).connect(surface.gain);
       sources.push(waterSource, swell);
 
       // Crowd: a murmur around voice frequencies, with a little babble in it.
@@ -151,6 +166,7 @@ export class Sfx {
       }
       this.amb = { bus, water, spray, crowd, sources };
       this.strokeClock = 0.5;
+      this.activity = 0;
     } catch {
       this.amb = null;
     }
@@ -195,12 +211,16 @@ export class Sfx {
   /**
    * Every step: `activity` 0–1 is how hard the swimmers are swimming (louder water, more
    * strokes splashing), `tension` 0–1 how close a goal feels (the crowd gets louder).
+   * Julián: the water as loud as before with many swimming fast, quieter once the positions
+   * settle. It rises in a third of a second and takes a second or two to calm down.
    */
   setAmbience(activity: number, tension: number, dt: number): void {
     const amb = this.amb;
     const ctx = this.context;
     if (!amb || !ctx || ctx.state !== 'running' || this.ambienceLevel <= 0 || !this.enabled) return;
-    const a = clamp01(activity);
+    const target = clamp01(activity);
+    this.activity += (target - this.activity) * (1 - Math.exp(-dt / (target > this.activity ? 0.3 : 1.1)));
+    const a = this.activity;
     // Strokes: the odd splash from somebody swimming hard.
     this.strokeClock -= dt;
     if (this.strokeClock <= 0) {
@@ -216,8 +236,8 @@ export class Sfx {
     if (this.ambienceTick < 0.1) return;
     this.ambienceTick = 0;
     const now = ctx.currentTime;
-    amb.water.gain.setTargetAtTime(0.035 + 0.035 * a, now, 0.4);
-    amb.spray.gain.setTargetAtTime(0.016 * a, now, 0.4);
+    amb.water.gain.setTargetAtTime(WATER_STILL + (WATER_SPRINT - WATER_STILL) * a, now, 0.25);
+    amb.spray.gain.setTargetAtTime(0.016 * a, now, 0.25);
     amb.crowd?.gain.setTargetAtTime(0.02 + 0.04 * clamp01(tension), now, 0.6);
   }
 
@@ -239,15 +259,15 @@ export class Sfx {
       switch (moment) {
         case 'goalUs':
         case 'win':
-          // A roar that swells, then applause underneath.
+          // A roar that swells, then a long round of applause (Julián) that lasts through the replay.
           this.burst(now, 2.4, 0.2 * k, { type: 'bandpass', from: 560, to: 900, q: 0.6, swell: 0.35 }, bus);
           this.burst(now + 0.05, 2.0, 0.09 * k, { type: 'bandpass', from: 1500, to: 1900, q: 0.9, swell: 0.3 }, bus);
-          this.applause(now + 0.35, moment === 'win' ? 4 : 2.8, 0.16 * k);
+          this.applause(now + 0.3, moment === 'win' ? 5 : 7.5, APPLAUSE_GOAL * k);
           break;
         case 'goalThem':
-          // Disappointment, and a few claps from their supporters.
+          // Disappointment, and their supporters clapping for a while.
           this.burst(now, 1.1, 0.1 * k, { type: 'bandpass', from: 650, to: 360, q: 0.8, swell: 0.12 }, bus);
-          this.applause(now + 0.2, 1.4, 0.045 * k);
+          this.applause(now + 0.25, 3.2, APPLAUSE_GOAL * 0.4 * k);
           break;
         case 'saveUs':
           // "¡Uaaah!" and applause for our keeper.
@@ -294,13 +314,15 @@ export class Sfx {
     this.applauseBuffer ??= this.makeApplause(ctx);
     const source = ctx.createBufferSource();
     source.buffer = this.applauseBuffer;
+    // The buffer loops seamlessly, so a round of applause can last as long as it needs.
+    source.loop = true;
     source.playbackRate.value = 0.9 + Math.random() * 0.2;
     const envelope = ctx.createGain();
     envelope.gain.setValueAtTime(0.0001, start);
     envelope.gain.exponentialRampToValueAtTime(gain, start + 0.15);
     envelope.gain.setTargetAtTime(0.0001, start + duration * 0.55, duration * 0.18);
     source.connect(this.filter(ctx, 'bandpass', 1700, 0.45)).connect(envelope).connect(amb.bus);
-    source.start(start, Math.random() * 0.4);
+    source.start(start, Math.random() * 3);
     source.stop(start + duration + 0.3);
   }
 
@@ -312,20 +334,39 @@ export class Sfx {
     return buffer;
   }
 
-  /** Hundreds of short, decaying noise claps, denser at the start, in one buffer. */
+  /**
+   * A stand clapping: about a thousand claps spread evenly over four seconds that loop without a
+   * seam (a clap that runs past the end carries on at the start). Each clap is a burst of noise
+   * through its own resonance, so they do not all sound alike, and a few near ones are louder.
+   */
   private makeApplause(ctx: AudioContext): AudioBuffer {
     const rate = ctx.sampleRate;
     const seconds = 4;
     const length = Math.floor(rate * seconds);
     const buffer = ctx.createBuffer(1, length, rate);
     const data = buffer.getChannelData(0);
-    for (let c = 0; c < 340; c++) {
-      const at = Math.pow(Math.random(), 1.5) * (seconds - 0.05);
-      const start = Math.floor(at * rate);
-      const amplitude = (0.25 + 0.75 * Math.random()) * (1 - 0.55 * (at / seconds));
-      const size = Math.floor((0.008 + 0.016 * Math.random()) * rate);
-      const decay = size * 0.25;
-      for (let i = 0; i < size && start + i < length; i++) data[start + i] = (data[start + i] ?? 0) + (Math.random() * 2 - 1) * amplitude * Math.exp(-i / decay);
+    for (let c = 0; c < 1000; c++) {
+      const start = Math.floor(Math.random() * length);
+      const amplitude = 0.2 + 0.8 * Math.pow(Math.random(), 3);
+      const size = Math.floor((0.01 + 0.018 * Math.random()) * rate);
+      const fade = Math.exp(-1 / (size * 0.22));
+      // Two-pole resonator between 700 and 2600 Hz: the hollow of the hands.
+      const w = (2 * Math.PI * (700 + 1900 * Math.random())) / rate;
+      const r = 0.9;
+      const b1 = 2 * r * Math.cos(w);
+      const b2 = -r * r;
+      let y1 = 0;
+      let y2 = 0;
+      let level = 1;
+      for (let i = 0; i < size; i++) {
+        const x = (Math.random() * 2 - 1) * level;
+        level *= fade;
+        const y = x + b1 * y1 + b2 * y2;
+        y2 = y1;
+        y1 = y;
+        const j = (start + i) % length;
+        data[j] = (data[j] ?? 0) + y * amplitude * 0.15;
+      }
     }
     // Take the thump out (one-pole high-pass) and normalise.
     let previousIn = 0;
@@ -359,18 +400,22 @@ export class Sfx {
     return biquad;
   }
 
-  /** `intensity` 0–1 scales loudness (and pitch, for some sounds). */
-  play(name: SoundName, intensity = 1): void {
+  /** `intensity` 0–1 scales loudness (and pitch, for some sounds); `delay` in seconds. */
+  play(name: SoundName, intensity = 1, delay = 0): void {
     const ctx = this.context;
     const out = this.master;
     if (!this.enabled || !ctx || !out || ctx.state !== 'running') return;
-    const now = ctx.currentTime;
+    const now = ctx.currentTime + Math.max(0, delay);
     const level = Math.min(1, Math.max(0.1, intensity));
     try {
       switch (name) {
         case 'whistle':
           // Pea whistle: two close high tones with a fast warble.
           for (const frequency of [2350, 2520]) this.tone(frequency, now, 0.42, 0.16, 'square', { tremolo: 34, attack: 0.01 });
+          break;
+        case 'goalWhistle':
+          // The referee gives the goal: the same whistle, one long blast held to the end.
+          for (const frequency of [2350, 2520]) this.tone(frequency, now, 0.8, GOAL_WHISTLE, 'square', { tremolo: 34, attack: 0.02, hold: true });
           break;
         case 'throw':
           this.burst(now, 0.14, 0.22 * level, { type: 'bandpass', from: 900, to: 2600, q: 1.2 });
@@ -421,7 +466,7 @@ export class Sfx {
     duration: number,
     gain: number,
     type: OscillatorType,
-    options: { tremolo?: number; attack?: number; to?: number } = {},
+    options: { tremolo?: number; attack?: number; to?: number; hold?: boolean } = {},
     destination?: AudioNode,
   ): void {
     const ctx = this.context as AudioContext;
@@ -432,6 +477,8 @@ export class Sfx {
     if (options.to) oscillator.frequency.exponentialRampToValueAtTime(options.to, start + duration);
     envelope.gain.setValueAtTime(0.0001, start);
     envelope.gain.exponentialRampToValueAtTime(gain, start + (options.attack ?? 0.01));
+    // Held: full until the last moment, then a quick release (a blast, not a ring dying out).
+    if (options.hold) envelope.gain.setValueAtTime(gain, start + duration - 0.07);
     envelope.gain.exponentialRampToValueAtTime(0.0001, start + duration);
     oscillator.connect(envelope);
     if (options.tremolo) {

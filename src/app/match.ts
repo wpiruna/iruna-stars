@@ -81,6 +81,10 @@ export class MatchSession implements Session {
   private replayDue: { from: number; to: number; goal: Goal } | null = null;
   private replayGoal: Goal | null = null;
   private skipHeld = true;
+  /** The goal headline: each scorer's goals in this match, and seconds until it goes (or is gone). */
+  private readonly tally = new Map<Player, number>();
+  private goalId = 0;
+  private goalTimer = -1;
 
   constructor(
     private readonly deps: MatchDeps,
@@ -303,6 +307,7 @@ export class MatchSession implements Session {
       this.freeze--;
       return;
     }
+    this.stepGoalHeadline();
     // A goal replay: the match waits; any button skips it.
     const pressed = input.shot || input.skill || input.touching;
     if (this.replay?.playing) {
@@ -325,6 +330,8 @@ export class MatchSession implements Session {
         this.playView.setReplay(true);
         this.playView.snapCamera();
         hud.set({ replay: true });
+        // The headline stays up for the whole replay and goes with it.
+        this.goalTimer = -1;
       }
     }
     this.deps.sfx.setAmbience(swimActivity([...this.match.inPlay(0), ...this.match.inPlay(1)]), this.tension(), 1 / 60);
@@ -341,6 +348,46 @@ export class MatchSession implements Session {
     this.playView.setReplay(false);
     this.playView.snapCamera();
     hud.set({ replay: false });
+    this.hideGoal();
+  }
+
+  /** Our goal or theirs, at the top: the scorer's card (his photo if he is ours) and the new score. */
+  private showGoal(event: Extract<MatchEvent, { type: 'goal' }>): void {
+    const s = event.scorer;
+    const tally = s ? (this.tally.get(s.player) ?? 0) + 1 : 0;
+    if (s) this.tally.set(s.player, tally);
+    // The special photo (the second one) is for moments like this one (GDD §16).
+    const photo = s && s.team === 0 ? (s.player.photos[1] ?? s.player.photos[0]) : undefined;
+    hud.set({
+      goal: {
+        id: ++this.goalId,
+        ours: event.side === 0,
+        scorer: s
+          ? { number: s.player.number, nickname: s.player.nickname, position: s.player.position, keeper: s.keeper, ...(photo ? { photo } : {}) }
+          : null,
+        tally,
+        score: [event.score[0], event.score[1]],
+        leaving: false,
+      },
+    });
+    // If no replay comes (too short to replay), it goes on its own.
+    this.goalTimer = 3.5;
+  }
+
+  /** The headline leaves (its exit animation), then it is gone. */
+  private hideGoal(): void {
+    const goal = hud.get().goal;
+    if (!goal || goal.leaving) return;
+    hud.set({ goal: { ...goal, leaving: true } });
+    this.goalTimer = 0.4;
+  }
+
+  private stepGoalHeadline(): void {
+    if (this.goalTimer < 0) return;
+    this.goalTimer -= 1 / 60;
+    if (this.goalTimer >= 0) return;
+    if (hud.get().goal?.leaving) hud.set({ goal: null });
+    else this.hideGoal();
   }
 
   /** How close a goal feels, for the crowd: a break with a man free, a shot coming, the clock running out. */
@@ -507,8 +554,14 @@ export class MatchSession implements Session {
           const shot = this.lastRelease >= 0 && now - this.lastRelease < 3 * 60 ? this.lastRelease : now - 60;
           this.replayDue = { from: shot - r.antes * 60, to: now + r.despues * 60, goal: m.goalOf(event.side) };
         }
-        const scorer = event.scorer ? `Nº ${event.scorer.player.number} ${event.scorer.player.nickname.toUpperCase()}` : 'En propia puerta';
-        this.banner('¡GOL!', ours ? 'great' : 'bad', `${scorer} · ${event.score[0]}–${event.score[1]}`);
+        // The referee gives it with a long blast, just after the ball hits the net (Julián).
+        sfx.play('goalWhistle', 1, 0.3);
+        if (this.replay) this.showGoal(event);
+        else {
+          // The labs keep the plain caption.
+          const scorer = event.scorer ? `Nº ${event.scorer.player.number} ${event.scorer.player.nickname.toUpperCase()}` : 'En propia puerta';
+          this.banner('¡GOL!', ours ? 'great' : 'bad', `${scorer} · ${event.score[0]}–${event.score[1]}`);
+        }
         sfx.crowd(ours ? 'goalUs' : 'goalThem');
         if (save.settings.vibration) vibrate(ours ? [30, 40, 60] : 40);
         break;

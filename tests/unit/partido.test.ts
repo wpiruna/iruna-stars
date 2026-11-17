@@ -628,6 +628,32 @@ describe('faltas en ataque', () => {
   });
 });
 
+describe('sonido del agua', () => {
+  it('suena con la contra y baja cuando el ataque ya está asentado (Julián)', async () => {
+    const { swimActivity } = await import('../../src/app/ambience');
+    const match = makeMatch({ seed: 'agua' });
+    const sprint: number[] = [];
+    const settled: number[] = [];
+    let phase = '';
+    let since = 0;
+    for (let i = 0; i < 60 * 240; i++) {
+      match.step(NEUTRAL);
+      since = match.phase === phase ? since + 1 : 0;
+      phase = match.phase;
+      const a = swimActivity([...match.inPlay(0), ...match.inPlay(1)]);
+      // The sprint of a break (its first seconds) and a set attack that has been there a while.
+      if (phase === 'transition' && since > 60 && since < 300) sprint.push(a);
+      if (phase === 'positional' && since > 60 * 7) settled.push(a);
+    }
+    const median = (xs: number[]) => [...xs].sort((x, y) => x - y)[Math.floor(xs.length / 2)] ?? 0;
+    expect(sprint.length).toBeGreaterThan(300);
+    expect(settled.length).toBeGreaterThan(60);
+    expect(median(sprint)).toBeGreaterThan(0.8);
+    expect(median(settled)).toBeLessThan(0.3);
+    expect(swimActivity([])).toBe(0);
+  });
+});
+
 describe('repetición del gol', () => {
   it('reproduce lo grabado y, al acabar, el partido sigue exactamente igual que sin repetición', async () => {
     const { GoalReplay } = await import('../../src/app/replay');

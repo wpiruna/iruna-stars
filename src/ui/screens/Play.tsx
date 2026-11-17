@@ -3,6 +3,7 @@ import { useState } from 'preact/hooks';
 import type { InputDevice } from '../../app/platform';
 import { DEFAULT_LAB_SETTINGS } from '../../app/play';
 import { imageUrl, playerPlaceholder } from '../../data/images';
+import { POSITION_LABEL } from '../../data/model';
 import { LAB_SPOTS, type LabSettings } from '../../sim/duel/lab';
 import { Shield } from '../components/Shield';
 import { useApp } from '../context';
@@ -119,9 +120,61 @@ const PAD_LABEL: Record<string, Record<InputDevice, string>> = {
 const clockText = (seconds: number): string => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 const PERIOD = ['', '1º', '2º', '3º', '4º', '5º', '6º'];
 
+/**
+ * The goal headline (GDD §16, "rótulo de gol"; Julián after F4): ¡GOOOL! at the top with the
+ * scorer's card, his photo if he is ours, and the new score. It stays up through the replay.
+ */
+function GoalHeadline() {
+  const { goal, match } = useStore(hud);
+  if (!goal || !match) return null;
+  const s = goal.scorer;
+  const team = goal.ours ? match.ours : match.rival;
+  // Our scorer's card with his photo; for theirs (and own goals) the shield of the team that scored.
+  const card = goal.ours && s;
+  const photo = card ? imageUrl(s.photo) : undefined;
+  const tint = s ? ` goal-head__card--${s.position}` : '';
+  const meta = s ? [POSITION_LABEL[s.position], goal.tally > 1 ? `${goal.tally}.º gol` : ''].filter(Boolean).join(' · ') : team.name;
+  return (
+    <div class={`goal-head goal-head--${goal.ours ? 'ours' : 'theirs'}${goal.leaving ? ' goal-head--leaving' : ''}`} key={goal.id}>
+      {card ? (
+        <div class={`goal-head__card${tint}`}>
+          <div class={`portrait${photo ? ' portrait--photo' : ''}`}>
+            <img src={photo ?? playerPlaceholder(s.number, s.keeper)} alt="" draggable={false} />
+          </div>
+          <span class="goal-head__number">{s.number}</span>
+        </div>
+      ) : (
+        <div class="goal-head__card goal-head__card--shield">
+          <Shield id={team.id} code={team.code} image={team.shield} size={5} />
+        </div>
+      )}
+      <div class="goal-head__text">
+        <strong class="goal-head__title">{goal.ours ? '¡GOOOL!' : '¡GOL!'}</strong>
+        <span class="goal-head__name">
+          {s ? (
+            <>
+              <b>{s.number}</b> {s.nickname}
+            </>
+          ) : (
+            'En propia puerta'
+          )}
+        </span>
+        <span class="goal-head__meta">{meta}</span>
+      </div>
+      <div class="goal-head__score">
+        <Shield id={match.ours.id} code={match.ours.code} image={match.ours.shield} size={2.2} />
+        <b class={goal.ours ? 'goal-head__new' : ''}>{goal.score[0]}</b>
+        <i>–</i>
+        <b class={goal.ours ? '' : 'goal-head__new'}>{goal.score[1]}</b>
+        <Shield id={match.rival.id} code={match.rival.code} image={match.rival.shield} size={2.2} />
+      </div>
+    </div>
+  );
+}
+
 /** Television scoreboard and what the pad does right now (GDD §4 and §16). */
 function MatchHud() {
-  const { match, device, replay } = useStore(hud);
+  const { match, device, replay, goal } = useStore(hud);
   if (!match) return null;
   if (replay) {
     return (
@@ -131,6 +184,8 @@ function MatchHud() {
       </div>
     );
   }
+  // The goal headline takes the scoreboard's place (it carries the score).
+  if (goal) return null;
   const shotUrgent = match.shotClock <= 5 && (match.phase === 'transition' || match.phase === 'positional');
   const label = PAD_LABEL[match.padMode]?.[device];
   return (
@@ -316,6 +371,7 @@ export function Play() {
       <Scoreboard />
       <AttackHud />
       <MatchHud />
+      <GoalHeadline />
       <Banner />
       <TurnCard />
       <LabPanel />
