@@ -397,8 +397,18 @@ describe('reparto de puestos con costes negativos', () => {
   it('encuentra el mejor reparto aunque algún puesto reste (dos zurdos a la derecha, cada uno en el suyo)', async () => {
     const { assign } = await import('../../src/sim/attack/formation');
     // Lateral and wing, both left-handed: lateral → lateralDer, wing → extremoDer.
-    const cost = (who: string, slot: string): number =>
-      ({ 'L:lateralDer': -1, 'L:extremoDer': 0, 'E:lateralDer': 0, 'E:extremoDer': -1, 'B:boya': 0, 'B:lateralDer': 3, 'B:extremoDer': 3, 'L:boya': 3.5, 'E:boya': 4.5 })[`${who}:${slot}`] ?? 9;
+    const table: Record<string, number> = {
+      'L:lateralDer': -1,
+      'L:extremoDer': 0,
+      'E:lateralDer': 0,
+      'E:extremoDer': -1,
+      'B:boya': 0,
+      'B:lateralDer': 3,
+      'B:extremoDer': 3,
+      'L:boya': 3.5,
+      'E:boya': 4.5,
+    };
+    const cost = (who: string, slot: string): number => table[`${who}:${slot}`] ?? 9;
     const result = assign(['B', 'E', 'L'], ['boya', 'extremoDer', 'lateralDer'], cost);
     expect(result.get('L')).toBe('lateralDer');
     expect(result.get('E')).toBe('extremoDer');
