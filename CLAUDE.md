@@ -108,7 +108,8 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
 
 - Repositorio **público** `wpiruna/iruna-stars`, **solo motes**: la columna *Nombre* de la hoja nunca llega
   a los JSON ni al build (hay un test que lo comprueba).
-- **Antes de cada `git push`**: la columna *Nombre* de la hoja tiene que seguir vacía. Si `npm run datos`
+- **Antes de cada `git push`**: `npm run typecheck` además de `npm test` (Vitest no comprueba los tipos de los tests y
+  el build sí: una vez falló la publicación por eso), y la columna *Nombre* de la hoja tiene que seguir vacía. Si `npm run datos`
   muestra el apartado "Privacidad", no se sube: el repositorio es público y su historial no se borra.
 - Los commits se firman con la dirección anónima de GitHub de la cuenta `wpiruna` (configurada solo en
   este repositorio), para que no quede ningún correo personal a la vista.
