@@ -75,8 +75,8 @@ export class AttackSession implements Session {
     this.drill = new AttackDrill({
       field,
       formations: data.formations,
-      lineup: pickLineup(data.ourTeam.players, slots),
-      marking: pickLineup(rival.players, slots),
+      lineup: pickLineup(data.ourTeam.players, slots, data.tuning.ataque.zona.mano),
+      marking: pickLineup(rival.players, slots, data.tuning.ataque.zona.mano),
       keeper: pickKeeper(rival),
       defenseStyle: rival.style === 'defensive' ? 'zone' : 'press',
       possession: {

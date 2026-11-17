@@ -208,7 +208,14 @@
     },
     "zona": {
       "distanciaMinima": 2.15,
-      "abrirLinea": 0.45
+      "abrirLinea": 0.45,
+      "mano": {
+        "_nota": "Coste de cada puesto según la mano (se suma al del Puesto; la distancia vale unos 0,6 por metro): los zurdos juegan siempre por la derecha del ataque; al centro (boya, cierre) solo si no queda sitio a la derecha.",
+        "zurdoEnSuLado": -1,
+        "zurdoAlOtroLado": 5,
+        "diestroALaDerecha": 0.15,
+        "zurdoAlCentro": 2.5
+      }
     },
     "control": {
       "zonaMuerta": 0.2,
@@ -580,6 +587,11 @@
         "perdida": 0.12,
         "presion": 0.3,
         "toqueMs": 200
+      },
+      "cierreAlBoya": {
+        "_nota": "Al formarse el ataque estático, el defensor que juega de cierre (o, si no, uno de arquetipo Defensor) se queda con el boya rival: es la ventaja en segundos de llegada que se le da para esa marca.",
+        "cierre": 8.0,
+        "defensor": 1.5
       }
     },
     "camara": {

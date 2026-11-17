@@ -102,7 +102,7 @@ describe('puestos y formación 3-3', () => {
     const righty = makePlayer('driver');
     const wings = [makePlayer('wing'), makePlayer('wing')];
     const point = makePlayer('point');
-    const slots = assignSlots([righty, wings[0]!, point, leftie, boya, wings[1]!], ['boya', 'extremoIzq', 'extremoDer', 'lateralIzq', 'lateralDer', 'cierre']);
+    const slots = assignSlots([righty, wings[0]!, point, leftie, boya, wings[1]!], ['boya', 'extremoIzq', 'extremoDer', 'lateralIzq', 'lateralDer', 'cierre'], T.zona.mano);
     expect(slots.get(boya)).toBe('boya');
     expect(slots.get(point)).toBe('cierre');
     expect(slots.get(leftie)).toBe('lateralDer');
@@ -113,7 +113,7 @@ describe('puestos y formación 3-3', () => {
     const invented = { ...makePlayer('center'), origin: 'provisional' as const };
     const real = makePlayer('center');
     const squad = [invented, real, makePlayer('wing'), makePlayer('wing'), makePlayer('driver'), makePlayer('driver'), makePlayer('point'), makePlayer('goalkeeper')];
-    const lineup = pickLineup(squad, ['boya', 'extremoIzq', 'extremoDer', 'lateralIzq', 'lateralDer', 'cierre']);
+    const lineup = pickLineup(squad, ['boya', 'extremoIzq', 'extremoDer', 'lateralIzq', 'lateralDer', 'cierre'], T.zona.mano);
     expect(lineup.size).toBe(6);
     expect(lineup.get(real)).toBe('boya');
     expect(lineup.has(invented)).toBe(false);
@@ -392,3 +392,15 @@ describe('defensa y escapada', () => {
 void insidePoint;
 const _slot: Slot = 'boya';
 void _slot;
+
+describe('reparto de puestos con costes negativos', () => {
+  it('encuentra el mejor reparto aunque algún puesto reste (dos zurdos a la derecha, cada uno en el suyo)', async () => {
+    const { assign } = await import('../../src/sim/attack/formation');
+    // Lateral and wing, both left-handed: lateral → lateralDer, wing → extremoDer.
+    const cost = (who: string, slot: string): number =>
+      ({ 'L:lateralDer': -1, 'L:extremoDer': 0, 'E:lateralDer': 0, 'E:extremoDer': -1, 'B:boya': 0, 'B:lateralDer': 3, 'B:extremoDer': 3, 'L:boya': 3.5, 'E:boya': 4.5 })[`${who}:${slot}`] ?? 9;
+    const result = assign(['B', 'E', 'L'], ['boya', 'extremoDer', 'lateralDer'], cost);
+    expect(result.get('L')).toBe('lateralDer');
+    expect(result.get('E')).toBe('extremoDer');
+  });
+});

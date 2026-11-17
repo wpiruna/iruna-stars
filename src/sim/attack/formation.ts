@@ -18,17 +18,26 @@ const POSITION_COST: Record<Exclude<Position, 'goalkeeper'>, Record<'boya' | 'ex
 const kind = (slot: Slot): 'boya' | 'extremo' | 'lateral' | 'cierre' =>
   slot === 'boya' ? 'boya' : slot === 'cierre' ? 'cierre' : slot.startsWith('extremo') ? 'extremo' : 'lateral';
 
+/** What the hand costs on each side (data/tuning.json → ataque.zona.mano). */
+export interface HandCost {
+  zurdoEnSuLado: number;
+  zurdoAlOtroLado: number;
+  zurdoAlCentro: number;
+  diestroALaDerecha: number;
+}
+
 /** Right side of the attack (from the attacker's point of view). */
 export const isRightSide = (slot: Slot): boolean => slot.endsWith('Der');
 export const isLeftSide = (slot: Slot): boolean => slot.endsWith('Izq');
 
-export function slotCost(player: Player, slot: Slot): number {
+export function slotCost(player: Player, slot: Slot, hand: HandCost): number {
   const position = player.position === 'goalkeeper' ? 'point' : player.position;
   let cost = POSITION_COST[position][kind(slot)];
   // A defensive archetype can hold the centre spot if needed.
   if (slot === 'boya' && player.archetype === 'defender') cost -= 0.8;
-  if (player.hand === 'left') cost += isRightSide(slot) ? -0.6 : isLeftSide(slot) ? 0.6 : 0;
-  else if (isRightSide(slot)) cost += 0.1;
+  // Left-handers play on the right of the attack: their shooting arm faces the goal.
+  if (player.hand === 'left') cost += isRightSide(slot) ? hand.zurdoEnSuLado : isLeftSide(slot) ? hand.zurdoAlOtroLado : hand.zurdoAlCentro;
+  else if (isRightSide(slot)) cost += hand.diestroALaDerecha;
   return cost;
 }
 
@@ -57,8 +66,10 @@ export function assign<T>(items: readonly T[], slots: readonly Slot[], cost: (it
   let best: number[] = [];
   let bestCost = Infinity;
   for (const order of permutations(items.length)) {
+    // Every order in full: costs can be negative (a left-hander on the right), so a partial sum
+    // above the best so far may still end below it.
     let total = 0;
-    for (let i = 0; i < order.length && total < bestCost; i++) total += cost(items[i] as T, slots[order[i] as number] as Slot);
+    for (let i = 0; i < order.length; i++) total += cost(items[i] as T, slots[order[i] as number] as Slot);
     if (total < bestCost) {
       bestCost = total;
       best = order;
@@ -67,15 +78,15 @@ export function assign<T>(items: readonly T[], slots: readonly Slot[], cost: (it
   return new Map(items.map((item, i) => [item, slots[best[i] as number] as Slot]));
 }
 
-export function assignSlots(players: readonly Player[], slots: readonly Slot[]): Map<Player, Slot> {
-  return assign(players, slots, slotCost);
+export function assignSlots(players: readonly Player[], slots: readonly Slot[], hand: HandCost): Map<Player, Slot> {
+  return assign(players, slots, (p, slot) => slotCost(p, slot, hand));
 }
 
 /**
  * Picks the players for a set of slots from a squad: real players first, then the best fit by
  * Puesto and hand. Returns them already matched to their slots.
  */
-export function pickLineup(squad: readonly Player[], slots: readonly Slot[]): Map<Player, Slot> {
+export function pickLineup(squad: readonly Player[], slots: readonly Slot[], hand: HandCost): Map<Player, Slot> {
   const pool = squad.filter((p) => p.position !== 'goalkeeper');
   const chosen: Player[] = [];
   // Hardest slots first, so a scarce Puesto (the centre) is not used up elsewhere.
@@ -83,10 +94,10 @@ export function pickLineup(squad: readonly Player[], slots: readonly Slot[]): Ma
   for (const slot of order) {
     const best = pool
       .filter((p) => !chosen.includes(p))
-      .sort((a, b) => (a.origin === 'provisional' ? 1 : 0) - (b.origin === 'provisional' ? 1 : 0) || slotCost(a, slot) - slotCost(b, slot) || a.number - b.number)[0];
+      .sort((a, b) => (a.origin === 'provisional' ? 1 : 0) - (b.origin === 'provisional' ? 1 : 0) || slotCost(a, slot, hand) - slotCost(b, slot, hand) || a.number - b.number)[0];
     if (best) chosen.push(best);
   }
-  return assignSlots(chosen, slots.slice(0, chosen.length));
+  return assignSlots(chosen, slots.slice(0, chosen.length), hand);
 }
 
 /** World point of a slot, kept out of the 2-metre zone (GDD §6.3). */

@@ -95,8 +95,9 @@ export class MatchSession implements Session {
     this.rng = new Rng(this.seed);
     const field = fieldFromRules(data.rules);
     const ours = data.ourTeam;
-    const ourField = [...pickLineup(ours.players, SLOTS).keys()];
-    const rivalField = [...pickLineup(rival.players, SLOTS).keys()];
+    const hand = data.tuning.ataque.zona.mano;
+    const ourField = [...pickLineup(ours.players, SLOTS, hand).keys()];
+    const rivalField = [...pickLineup(rival.players, SLOTS, hand).keys()];
     const bench = (team: Team, lineup: Player[]): Player[] =>
       team.players.filter((p) => p.position !== 'goalkeeper' && !lineup.includes(p)).slice(0, data.rules.convocatoria.suplentes);
     // The friendly's referee, or one at random; in the labs a neutral one.

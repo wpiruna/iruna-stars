@@ -970,7 +970,7 @@ export class Match {
     const side = this.sides[first.team];
     const slots = SLOTS.slice(0, field.length);
     const points = new Map(slots.map((s) => [s, this.slotAt(s, side)]));
-    const result = assign(field, slots, (a, slot) => dist(a.pos, points.get(slot) as Vec2) * 0.6 + slotCost(a.player, slot));
+    const result = assign(field, slots, (a, slot) => dist(a.pos, points.get(slot) as Vec2) * 0.6 + slotCost(a.player, slot, this.t.zona.mano));
     for (const [a, slot] of result) a.slot = slot;
   }
 
@@ -990,7 +990,14 @@ export class Match {
     const att = this.attackingSide;
     const def = this.defendingSide;
     if (!att || !def) return;
-    const marks = assignMarks(def.field, att.field, att.attacks, this.ball.holder, this.m.transicion.peligro);
+    // In a set defence the cierre takes their centre (Julián); on the break, whoever gets there first.
+    const c = this.m.defensa.cierreAlBoya;
+    const preference =
+      this.phase === 'positional'
+        ? (d: Swimmer, a: Swimmer): number =>
+            a.slot === 'boya' ? (d.player.position === 'point' ? c.cierre : d.player.archetype === 'defender' ? c.defensor : 0) : 0
+        : undefined;
+    const marks = assignMarks(def.field, att.field, att.attacks, this.ball.holder, this.m.transicion.peligro, preference);
     for (const [d, a] of marks) {
       d.mark = a;
       d.slot = a?.slot ?? null;
@@ -1903,7 +1910,7 @@ export class Match {
       return;
     }
     const points = new Map(slots.map((x) => [x, this.slotAt(x, att)]));
-    const result = assign(free, slots, (a, slot) => dist(a.pos, points.get(slot) as Vec2) + slotCost(a.player, slot));
+    const result = assign(free, slots, (a, slot) => dist(a.pos, points.get(slot) as Vec2) * 0.6 + slotCost(a.player, slot, this.t.zona.mano));
     for (const [a, slot] of result) a.slot = slot;
   }
 

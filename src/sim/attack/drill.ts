@@ -858,7 +858,7 @@ export class AttackDrill {
     const slots = free.map((a) => a.slot).filter((s): s is Slot => s !== null);
     if (slots.length !== free.length) return;
     const points = new Map(slots.map((s) => [s, slotPoint(this.setup.formations, s, this.goal, this.t.zona.distanciaMinima)]));
-    const result = assign(free, slots, (a, slot) => dist(a.pos, points.get(slot) as Vec2) + slotCost(a.player, slot));
+    const result = assign(free, slots, (a, slot) => dist(a.pos, points.get(slot) as Vec2) * 0.6 + slotCost(a.player, slot, this.t.zona.mano));
     for (const [a, slot] of result) a.slot = slot;
   }
 

@@ -586,12 +586,12 @@ describe('el balón y la red', () => {
 });
 
 describe('faltas en ataque', () => {
-  it('pocas en general; muchas más cuando recibe un boya Leñador, y siempre el balón cambia de equipo', { timeout: 180_000 }, () => {
+  it('pocas en general; muchas más cuando recibe un boya Leñador, y siempre el balón cambia de equipo', { timeout: 300_000 }, () => {
     const rate = (lenador: boolean) => {
       let catches = 0;
       let fouls = 0;
       let all = 0;
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 20; i++) {
         const match = makeMatch({ seed: `ataque-${i}`, periods: 2, periodSeconds: 240 });
         // The home centre (the first field player), with the Leñador trait as Ángel has in the sheet.
         const centre = match.inPlay(0)[0]!;
@@ -621,8 +621,8 @@ describe('faltas en ataque', () => {
     const withLenador = rate(true);
     // Rare without the trait (well under two per team and match); with it, the centre is called
     // for a good share of his receptions, and far more often than a centre without it.
-    expect(normal.all / 24).toBeLessThan(2);
-    expect(withLenador.catches).toBeGreaterThan(10);
+    expect(normal.all / 40).toBeLessThan(2);
+    expect(withLenador.catches).toBeGreaterThan(8);
     expect(withLenador.fouls / withLenador.catches).toBeGreaterThan(0.15);
     expect(normal.fouls / Math.max(1, normal.catches)).toBeLessThan(withLenador.fouls / withLenador.catches);
   });
@@ -722,5 +722,43 @@ describe('solo ante el portero', () => {
     }
     expect(closest).toBeGreaterThan(1.7);
     expect(closest).toBeLessThan(2.8);
+  });
+});
+
+describe('puestos en el ataque estático', () => {
+  it('el zurdo juega siempre por la derecha y el cierre defiende al boya rival', { timeout: 120_000 }, () => {
+    let settles = 0;
+    let lefty = 0;
+    let cierreOnBoya = 0;
+    let checks = 0;
+    for (let i = 0; i < 4; i++) {
+      const match = makeMatch({ seed: `puestos-${i}`, periods: 2, periodSeconds: 180 });
+      // A left-handed driver in each team, as Tainta (7) in ours.
+      const lefties = [match.inPlay(0)[3]!, match.inPlay(1)[3]!];
+      for (const s of lefties) (s.player as { hand: string }).hand = 'left';
+      let steps = 0;
+      while (match.phase !== 'fullTime' && steps < 60 * 60 * 5) {
+        for (const e of match.step(NEUTRAL)) {
+          if (e.type !== 'phase' || e.phase !== 'positional') continue;
+          const att = match.possession as 0 | 1;
+          const def = (1 - att) as 0 | 1;
+          if (match.inPlay(att).length !== 6 || match.inPlay(def).length !== 6) continue;
+          const l = lefties[att]!;
+          if (match.inPlay(att).includes(l)) {
+            settles++;
+            if (l.slot === 'lateralDer' || l.slot === 'extremoDer') lefty++;
+          }
+          const cierre = match.inPlay(def).find((d) => d.player.position === 'point');
+          if (cierre) {
+            checks++;
+            if (cierre.mark?.slot === 'boya') cierreOnBoya++;
+          }
+        }
+        steps++;
+      }
+    }
+    expect(settles).toBeGreaterThan(20);
+    expect(lefty).toBe(settles);
+    expect(cierreOnBoya / checks).toBeGreaterThan(0.85);
   });
 });

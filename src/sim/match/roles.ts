@@ -52,13 +52,21 @@ export function danger(attacker: Swimmer, goal: Goal, holder: Swimmer | null): n
  * Retreat (GDD §8.2): the defenders who can get there first take the most dangerous attackers;
  * the rest go by proximity. Works with unequal numbers (a man down, a 2-on-1 lab).
  */
-export function assignMarks(defenders: readonly Swimmer[], attackers: readonly Swimmer[], goal: Goal, holder: Swimmer | null, dangerWeight: number): Map<Swimmer, Swimmer | null> {
+export function assignMarks(
+  defenders: readonly Swimmer[],
+  attackers: readonly Swimmer[],
+  goal: Goal,
+  holder: Swimmer | null,
+  dangerWeight: number,
+  /** Seconds of head start a defender gets for a mark (a set defence: the cierre on their centre). */
+  preference?: (defender: Swimmer, attacker: Swimmer) => number,
+): Map<Swimmer, Swimmer | null> {
   const columns = attackers;
   const result = bestMatching(defenders.length, columns.length, (r, c) => {
     const d = defenders[r] as Swimmer;
     const a = columns[c] as Swimmer;
     const reach = dist(d.pos, insidePoint(a.pos, goal, 0.9)) / Math.max(0.5, d.topSpeed);
-    return reach - danger(a, goal, holder) * dangerWeight;
+    return reach - danger(a, goal, holder) * dangerWeight - (preference ? preference(d, a) : 0);
   });
   const marks = new Map<Swimmer, Swimmer | null>();
   defenders.forEach((d, i) => marks.set(d, result[i] !== undefined && result[i] >= 0 ? (columns[result[i] as number] as Swimmer) : null));

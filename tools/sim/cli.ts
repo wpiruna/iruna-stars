@@ -32,7 +32,7 @@ const teams: Team[] = RivalTeamSchema.array()
   .map((t) => toRivalTeam(t, RosterSchema.parse(read(`generado/rivales/${t.id}.json`))));
 const SLOTS = ['boya', 'extremoIzq', 'extremoDer', 'lateralIzq', 'lateralDer', 'cierre'] as const;
 const sideOf = (team: Team) => {
-  const field = [...pickLineup(team.players, [...SLOTS]).keys()] as Player[];
+  const field = [...pickLineup(team.players, [...SLOTS], tuning.ataque.zona.mano).keys()] as Player[];
   const bench = team.players.filter((p) => p.position !== 'goalkeeper' && !field.includes(p)).slice(0, rules.convocatoria.suplentes);
   return { team, field, bench, keeper: pickKeeper(team), human: false };
 };
