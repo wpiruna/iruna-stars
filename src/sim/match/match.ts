@@ -299,6 +299,8 @@ export class Match {
   private readonly zones = new Map<Swimmer, Vec2>();
   /** The short-handed defender who steps out to the ball. */
   private presser: Swimmer | null = null;
+  /** When the ball was lost in open play: the team that lost it takes a moment to turn round. */
+  private caughtOutUntil = -1;
   /** The shot being taken was blocked by this field player (for corner or goal throw). */
   private lastBlocker: Swimmer | null = null;
   private readonly fouls: Rng;
@@ -935,6 +937,8 @@ export class Match {
       this.afterShot = false;
       this.noShot = null;
       this.directUntil = -1;
+      // Lost in open play (stolen, cut out, a rebound): caught on the wrong foot for a moment.
+      this.caughtOutUntil = ['steal', 'intercept', 'loose', 'block', 'save'].includes(reason) ? this.time + this.m.transicion.reaccionPerdida : -1;
       this.shotClock = this.setup.possession.first;
       this.drives.clear();
       this.charging = null;
@@ -1090,9 +1094,16 @@ export class Match {
       a.speedScale = 1;
       a.desiredFacing = angleTo(a.pos, a.target);
     }
+    const caughtOut = this.time < this.caughtOutUntil;
     for (const d of def.field) {
       this.updateArm(d);
       if (this.chaseLoose(d)) continue;
+      if (caughtOut && d !== this.selected) {
+        // Still going the other way: they drift on before turning back.
+        d.target = { x: d.pos.x + d.vel.x * 0.6, y: d.pos.y + d.vel.y * 0.6 };
+        d.speedScale = 0.4;
+        continue;
+      }
       const flight = this.ball.flight;
       if (flight?.kind === 'pass' && flight.interceptor === d) {
         d.target = { x: flight.from.x + (flight.to.x - flight.from.x) * flight.endAt, y: flight.from.y + (flight.to.y - flight.from.y) * flight.endAt };
@@ -1101,8 +1112,18 @@ export class Match {
       }
       const m = d.mark;
       if (m) {
+        // As in real water polo: nobody goes out to meet them at halfway. Each defender swims back
+        // to his place in the set defence and picks his man up as he arrives, always between him
+        // and the goal: he waits at the pick-up line while the man is far, keeps a couple of metres
+        // goal-side as he comes in, and is in his static spot when the man reaches his.
         const ahead = { x: m.pos.x + m.vel.x * 0.3, y: m.pos.y + m.vel.y * 0.3 };
-        d.target = insidePoint(ahead, goal, this.t.defensa.distancia);
+        const there = toGoal(goal, ahead);
+        const home = m.slot ? toGoal(goal, insidePoint(this.slotAt(m.slot, att), goal, this.t.defensa.distancia)).distance : 3.5;
+        const goalSide = Math.max(1.2, there.distance - this.t.defensa.distancia);
+        const cushion = m === holder ? tr.colchonPoseedor : tr.colchon;
+        const depth = clamp(there.distance - cushion, Math.min(home, goalSide), tr.recogida);
+        const along = there.distance > 0.1 ? depth / there.distance : 0;
+        d.target = fromGoal(goal, depth, there.lateral * along);
         d.speedScale = dist(d.pos, d.target) > 2 ? 1 : 0.85;
       } else {
         d.target = fromGoal(goal, 3.5, 0);

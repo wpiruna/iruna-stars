@@ -433,7 +433,11 @@
       "velocidad": 1.2,
       "robo": 0.35,
       "reaccionPase": 0.25,
-      "lejosDelPuesto": 2.0
+      "lejosDelPuesto": 2.0,
+      "recogida": 8.0,
+      "colchon": 2.0,
+      "colchonPoseedor": 1.5,
+      "reaccionPerdida": 0.6
     },
     "saque": {
       "preparacion": 0.9,

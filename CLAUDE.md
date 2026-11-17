@@ -142,8 +142,12 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
   saque de portería; el excluido también vuelve si a su equipo le dan tiro libre, saque de portería o penalti.
 - El árbitro nunca inventa ni agrava: solo pita lo que clasifica `rules` (o algo más leve). El sesgo es ±12/8 % por
   punto con tope de 0,25. Hay tests de Monte Carlo (`tests/unit/arbitro.test.ts`): no romper esas bandas.
-- Equilibrio F4 (`npm run sim`, 2 periodos de 6 min): ~4 goles por equipo, ~2 exclusiones por equipo, ~0,3 penaltis,
-  superioridad ~35 % de gol, ~66 % de posesiones al estático con ~21 s de posesión. Faltas que provoca la IA en `tuning.json` → `partido.faltas`; árbitro en `arbitro`.
+- Equilibrio F4 (`npm run sim`, 2 periodos de 6 min): ~3,5 goles por equipo, ~2 exclusiones por equipo, ~0,25 penaltis,
+  superioridad ~35 % de gol, ~70 % de posesiones al estático con ~22 s de posesión.
+- Repliegue pedido por Julián: en la transición los defensores NO salen a por los atacantes al medio campo. Vuelven a su
+  sitio en la defensa estática y recogen a su hombre al llegar, siempre del lado de su portería (esperan en la línea de
+  recogida, ~8 m, y acompañan a ~2 m; `partido.transicion.recogida`, `colchon`, `colchonPoseedor`). Tras perder el
+  balón en juego (robo, corte, rechace) tardan `reaccionPerdida` (0,6 s) en darse la vuelta: de ahí salen las contras. Faltas que provoca la IA en `tuning.json` → `partido.faltas`; árbitro en `arbitro`.
 - Nadie da golpes todavía: la acción violenta existe en las reglas pero no se genera en el juego.
 - Faltas en ataque (pedidas por Julián): el que recibe o aguanta el balón con un defensor encima puede empujarle
   (`partido.faltas.ataque`); pocas en general, sobre todo boyas. El rasgo **Leñador** de la hoja las multiplica

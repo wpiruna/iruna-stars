@@ -171,10 +171,12 @@ for (let i = 0; i < matches; i++) {
 }
 
 const n = matches * 2;
+/** The GDD band (8–16 goals per team in 4 × 8 minutes), scaled to the scoreboard minutes played here. */
+const band = (goals: number): string => ((goals * rules.partido.periodos * periodSeconds) / (4 * 8 * 60)).toFixed(1);
 const live = (phaseTime.transition ?? 0) + (phaseTime.positional ?? 0);
 console.log('');
 console.log(`Partidos terminados: ${totals.finished}/${matches} · ${((Date.now() - started) / 1000).toFixed(0)} s de cálculo`);
-console.log(`Goles por equipo: ${(totals.goals / n).toFixed(1)} (mín ${Math.min(...scores)}, máx ${Math.max(...scores)}) · objetivo orientativo ${2 * rules.partido.periodos}–${4 * rules.partido.periodos} (8–16 en cuatro periodos)`);
+console.log(`Goles por equipo: ${(totals.goals / n).toFixed(1)} (mín ${Math.min(...scores)}, máx ${Math.max(...scores)}) · objetivo orientativo ${band(8)}–${band(16)} (8–16 en un partido de 4 × 8 minutos)`);
 console.log(`Tiros por equipo: ${(totals.shots / n).toFixed(1)} · a puerta ${((100 * totals.onTarget) / Math.max(1, totals.shots)).toFixed(0)} % · conversión ${((100 * totals.goals) / Math.max(1, totals.shots)).toFixed(0)} %`);
 console.log(`Pérdidas por equipo: ${(totals.turnovers / n).toFixed(1)} · contraataques con superioridad: ${(totals.counters / n).toFixed(1)}`);
 console.log(`Empates: ${totals.draws} · gana el de más nivel: ${totals.higherWins}/${totals.decided}`);

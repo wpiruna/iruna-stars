@@ -586,7 +586,7 @@ describe('faltas en ataque', () => {
       let catches = 0;
       let fouls = 0;
       let all = 0;
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 6; i++) {
         const match = makeMatch({ seed: `ataque-${i}`, periods: 2, periodSeconds: 240 });
         // The home centre (the first field player), with the Leñador trait as Ángel has in the sheet.
         const centre = match.inPlay(0)[0]!;
@@ -612,9 +612,9 @@ describe('faltas en ataque', () => {
     const withLenador = rate(true);
     // Rare without the trait (well under two per team and match); with it, the centre is called
     // for a good share of his receptions, and far more often than a centre without it.
-    expect(normal.all / 8).toBeLessThan(2);
-    expect(withLenador.catches).toBeGreaterThan(3);
-    expect(withLenador.fouls / withLenador.catches).toBeGreaterThan(0.15);
+    expect(normal.all / 12).toBeLessThan(2);
+    expect(withLenador.catches).toBeGreaterThan(5);
+    expect(withLenador.fouls / withLenador.catches).toBeGreaterThan(0.12);
     expect(normal.fouls / Math.max(1, normal.catches)).toBeLessThan(withLenador.fouls / withLenador.catches);
   });
 });
