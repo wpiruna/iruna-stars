@@ -17,7 +17,7 @@ import type { Field, Goal } from '../sim/field';
 import { optimalZone, type ShotTuning } from '../sim/shooting/model';
 import { actorTextures, BallView, Splashes, SwimmerView } from './actors';
 import { Camera, TILT } from './camera';
-import { NUMBER_FONT, rippleTexture } from './caps';
+import { auraRingTexture, glowTexture, NUMBER_FONT, rippleTexture } from './caps';
 import { BEHIND_GOAL, PoolView } from './pool';
 import type { QualityProfile } from './quality';
 import type { TimeEffects } from './shotview';
@@ -25,6 +25,8 @@ import { Water } from './water';
 
 const RISK_COLORS = { green: 0x62e08f, amber: 0xffb02e, red: 0xe23b46 } as const;
 const SELECT_COLOR = 0x7fd3ff;
+/** The aura of the player you control (Julián: green, so it stands out against the water). */
+const AURA_COLOR = 0x3ee07a;
 /** Players are drawn a little smaller than in the penalty close-up so 13 fit and stay readable. */
 const ACTOR_SIZE = 0.85;
 
@@ -82,6 +84,7 @@ export class PlayView {
   private readonly ball: BallView;
   private readonly splashes: Splashes;
   private readonly holderRing: Sprite;
+  private readonly aura: Sprite;
   private readonly selectRing: Sprite;
   private readonly lines = new Graphics();
   private readonly bar = new Graphics();
@@ -117,9 +120,12 @@ export class PlayView {
     this.ball = new BallView(renderer);
     this.splashes = new Splashes(renderer);
     const textures = actorTextures(renderer);
-    this.holderRing = new Sprite(rippleTexture(renderer));
+    this.holderRing = new Sprite(auraRingTexture(renderer));
     this.holderRing.anchor.set(0.5);
-    this.holderRing.tint = 0xffd23f;
+    this.holderRing.tint = AURA_COLOR;
+    this.aura = new Sprite(glowTexture(renderer));
+    this.aura.anchor.set(0.5);
+    this.aura.tint = AURA_COLOR;
     this.selectRing = new Sprite(rippleTexture(renderer));
     this.selectRing.anchor.set(0.5);
     this.selectRing.tint = SELECT_COLOR;
@@ -141,7 +147,7 @@ export class PlayView {
     }
     this.actorLayer.addChild(...this.ball.trail, this.ball.ball);
     this.shadowLayer.addChild(this.ball.shadow);
-    this.underLayer.addChild(this.holderRing, this.selectRing);
+    this.underLayer.addChild(this.aura, this.holderRing, this.selectRing);
     this.overlay.addChild(this.lines, this.bounceMark, this.aim, this.badge, this.bar);
     this.view.addChild(
       this.water.view,
@@ -490,9 +496,15 @@ export class PlayView {
   private drawRings(alpha: number, scale: number): void {
     const holder = this.drill.controlled;
     this.holderRing.visible = holder !== null;
+    this.aura.visible = holder !== null;
     if (holder) {
-      this.placeRing(this.holderRing, holder, alpha, scale, 0.62 + 0.03 * Math.sin(this.time * 6));
-      this.holderRing.alpha = 0.95;
+      // A green glow under the player you control, and a ring round it: you see at once who it is
+      // (and, in attack, where the ball is).
+      const pulse = Math.sin(this.time * 5);
+      this.placeRing(this.aura, holder, alpha, scale, 1.7 + 0.08 * pulse);
+      this.aura.alpha = 0.9 + 0.1 * pulse;
+      this.placeRing(this.holderRing, holder, alpha, scale, 0.82 + 0.04 * pulse);
+      this.holderRing.alpha = 1;
     }
     const selection = this.drill.selection;
     this.selectRing.visible = selection !== null;

@@ -213,7 +213,8 @@ describe('máquina de estados del partido', () => {
     const match = makeMatch({ seed: 'posesion', human: true, home: { speed: 10, skill: 10 }, away: { speed: 1, defense: 1 } });
     const won = until(match, (e) => e.type === 'swimOffWon', 15).found;
     expect(won && won.type === 'swimOffWon' ? won.by.team : -1).toBe(0);
-    const free = until(match, (e) => e.type === 'setPiece', 22).found;
+    // (A foul on the way gives us a free throw that does not stop the shot clock: wait for the clock.)
+    const free = until(match, (e) => e.type === 'setPiece' && e.reason === 'clock', 30).found;
     expect(free).toMatchObject({ type: 'setPiece', kind: 'freeThrow', side: 1 });
     expect(match.stats[0].turnovers).toBe(1);
   });

@@ -416,11 +416,8 @@
       "recoger": 0.6
     },
     "transicion": {
-      "distanciaPosicional": 8,
-      "segundosTrasMedio": 2.0,
       "estable": 0.3,
-      "maxVentaja": 3.5,
-      "llegada": 1.6,
+      "maxVentaja": 4.5,
       "reparto": 0.4,
       "peligro": 3,
       "profundidad": 2.8,
@@ -430,7 +427,7 @@
       "libre": 2.2,
       "ventajaMinima": 0.4,
       "primeraOleada": 2,
-      "velocidad": 1.2,
+      "velocidad": 1.35,
       "robo": 0.35,
       "reaccionPase": 0.25,
       "lejosDelPuesto": 2.0,
@@ -441,7 +438,9 @@
       "solo": {
         "_nota": "Solo ante el portero: mientras ningún defensor de campo esté más cerca de la portería que el que lleva el balón, sigue el contraataque; puede nadar hasta 'cerca' m de la portería, donde frena; la IA nada hasta ahí antes de tirar.",
         "cerca": 2.4
-      }
+      },
+      "margenMedio": 1.5,
+      "segundosSinVentaja": 1.5
     },
     "saque": {
       "preparacion": 0.9,

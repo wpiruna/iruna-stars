@@ -75,6 +75,35 @@ export function capTexture(renderer: Renderer, color: CapColor, number: number):
 
 let ring: Texture | undefined;
 /** Baked ripple ring, shared by every ripple sprite. */
+let glow: Texture | null = null;
+
+/** A soft round glow, white (tinted where it is used), baked once: the aura of the player you control. */
+export function glowTexture(renderer: Renderer): Texture {
+  if (!glow) {
+    const drawing = new Graphics();
+    // Concentric discs, fainter outwards: a cheap radial gradient without filters.
+    for (let i = 14; i >= 1; i--) {
+      const k = i / 14;
+      drawing.circle(0, 0, 64 * k).fill({ color: 0xffffff, alpha: 0.2 * (1.1 - k) });
+    }
+    glow = renderer.generateTexture({ target: drawing, resolution: 1, antialias: true });
+    drawing.destroy();
+  }
+  return glow;
+}
+
+let thickRing: Texture | null = null;
+
+/** A bold ring (tinted where it is used): the edge of the aura. */
+export function auraRingTexture(renderer: Renderer): Texture {
+  if (!thickRing) {
+    const drawing = new Graphics().circle(0, 0, 60).stroke({ color: 0xffffff, width: 11, alpha: 1 });
+    thickRing = renderer.generateTexture({ target: drawing, resolution: 1, antialias: true });
+    drawing.destroy();
+  }
+  return thickRing;
+}
+
 export function rippleTexture(renderer: Renderer): Texture {
   if (!ring) {
     const drawing = new Graphics().circle(0, 0, 60).stroke({ color: 0xffffff, width: 5, alpha: 0.9 });

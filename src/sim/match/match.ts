@@ -42,7 +42,7 @@ import { estimateSave, planShot, resolveShot, type AimSide, type KeeperTuning, t
 import { ballAt, goalVelocity, keepInNet, POOL_WALL } from '../shooting/trajectory';
 import { Brain, type BrainAction } from './brain';
 import { MatchInput, type ControlContext, type MatchIntent } from './input';
-import { assignMarks, bestMatching, countAdvantage, defenceSettled } from './roles';
+import { assignMarks, bestMatching, countAdvantage } from './roles';
 import {
   emptyStats,
   type Exclusion,
@@ -271,7 +271,6 @@ export class Match {
   private buffer: Buffered | null = null;
   private postFight: { until: number; won: boolean } | null = null;
   private boyaTurn: { at: number; won: boolean; resolved: boolean } | null = null;
-  private crossedHalfAt = -1;
   private settleSince = -1;
   private advantageSince = -1;
   private nextMarking = 0;
@@ -301,6 +300,8 @@ export class Match {
   private presser: Swimmer | null = null;
   /** When the ball was lost in open play: the team that lost it takes a moment to turn round. */
   private caughtOutUntil = -1;
+  /** When the ball last changed hands (a break without a man over does not last). */
+  private possessionSince = 0;
   /** The shot being taken was blocked by this field player (for corner or goal throw). */
   private lastBlocker: Swimmer | null = null;
   private readonly fouls: Rng;
@@ -753,7 +754,6 @@ export class Match {
     this.boyaTurn = null;
     this.post = 0;
     this.advantage = null;
-    this.crossedHalfAt = -1;
     this.settleSince = -1;
     this.advantageSince = -1;
     this.setPiece = null;
@@ -937,6 +937,7 @@ export class Match {
       this.afterShot = false;
       this.noShot = null;
       this.directUntil = -1;
+      this.possessionSince = this.time;
       // Lost in open play (stolen, cut out, a rebound): caught on the wrong foot for a moment.
       this.caughtOutUntil = ['steal', 'intercept', 'loose', 'block', 'save'].includes(reason) ? this.time + this.m.transicion.reaccionPerdida : -1;
       this.shotClock = this.setup.possession.first;
@@ -949,8 +950,7 @@ export class Match {
       this.preview = null;
       this.selection = null;
       this.advantage = null;
-      this.crossedHalfAt = -1;
-      this.settleSince = -1;
+        this.settleSince = -1;
       this.advantageSince = -1;
       for (const s of this.sides) s.brain.reset();
       // The excluded players of the team that gets the ball may come back (WP 10.5.2.3).
@@ -1040,6 +1040,8 @@ export class Match {
       this.checkSettle(events);
     } else {
       this.positionalTargets();
+      // Just settled: whoever is still far from his spot swims there at the pace of the break.
+      for (const s of this.movers) if (dist(s.pos, s.target) > this.m.transicion.lejosDelPuesto) s.speedPenalty *= this.m.transicion.velocidad;
       this.stepDrives(events);
       this.updateCentre(events);
     }
@@ -1242,6 +1244,12 @@ export class Match {
       a.speedScale = this.m.transicion.conBalon;
       a.desiredFacing = Math.atan2(this.carrySwim.y, this.carrySwim.x);
       return;
+    } else if (!breaking && !a.keeper && a.slot && !this.charging && this.mustPass !== a && dist(a.pos, this.slotAt(a.slot, this.sides[a.team])) > this.m.transicion.lejosDelPuesto) {
+      // The set attack started with him still coming up: he swims the ball to his spot in the arc.
+      a.target = this.slotAt(a.slot, this.sides[a.team]);
+      a.speedScale = this.m.transicion.conBalon;
+      a.desiredFacing = angleTo(a.pos, a.target);
+      return;
     } else if (breaking && !this.sides[a.team].human && !a.keeper && this.mustPass !== a) {
       // AI on the break: down its lane towards the 5 m.
       const here = toGoal(goal, a.pos);
@@ -1302,6 +1310,10 @@ export class Match {
     const sag = style === 'zone' ? t.hundimiento.zona : t.hundimiento.presion;
     const perimeter = m.slot === 'lateralIzq' || m.slot === 'lateralDer' || m.slot === 'cierre';
     if (boya && m !== holder && perimeter && sag > 0) target = lerp2(target, add(boya.pos, dir(boya.pos, ballXY), 1.2), sag);
+    // A man still swimming in is picked up at the pick-up line, not met out there.
+    const out = toGoal(goal, target);
+    const pickUp = this.m.transicion.recogida;
+    if (out.distance > pickUp) target = fromGoal(goal, pickUp, (out.lateral * pickUp) / out.distance);
     d.target = target;
     if (dist(d.pos, target) > this.m.transicion.lejosDelPuesto) d.speedScale = 1;
   }
@@ -1341,10 +1353,9 @@ export class Match {
     const tr = this.m.transicion;
     const goal = att.attacks;
     const distance = toGoal(goal, this.ball.pos).distance;
-    if (distance < this.setup.field.length / 2 && this.crossedHalfAt < 0) this.crossedHalfAt = this.time;
-    // More attackers than defenders ahead of the ball keeps it a break (GDD §4); it is announced
-    // ("¡CONTRA 2x1!") once somebody within shooting range is really free.
-    const raw = countAdvantage(att.field, def.field, this.ball.pos, goal, tr.ventajaDesde, 0);
+    // More attackers than defenders ahead of the ball, anywhere in the pool, keeps it a break
+    // (GDD §4); it is announced ("¡CONTRA 2x1!") once somebody within shooting range is really free.
+    const raw = countAdvantage(att.field, def.field, this.ball.pos, goal, this.setup.field.length, 0);
     if (raw && (this.advantageSince < 0 || this.time - this.advantageSince < tr.maxVentaja)) {
       if (this.advantageSince < 0) this.advantageSince = this.time;
       const free = countAdvantage(att.field, def.field, this.ball.pos, goal, tr.ventajaDesde, tr.libre);
@@ -1366,10 +1377,11 @@ export class Match {
       this.settleSince = -1;
       return;
     }
-    const close = distance < tr.distanciaPosicional;
-    const long = this.crossedHalfAt >= 0 && this.time - this.crossedHalfAt >= tr.segundosTrasMedio;
-    const settled = distance < this.setup.field.length / 2 && defenceSettled(def.field, tr.llegada);
-    if (close || long || settled) {
+    // No man over (Julián): back to the set attack as soon as the ball is over halfway, or soon after
+    // it changed hands; everybody then swims fast to his spot in the arc, the ball carrier too.
+    const over = distance < this.setup.field.length / 2 + tr.margenMedio;
+    const stale = this.time - this.possessionSince >= tr.segundosSinVentaja;
+    if (over || stale) {
       if (this.settleSince < 0) this.settleSince = this.time;
       if (this.time - this.settleSince >= tr.estable) {
         this.setPhase('positional', events);
