@@ -156,15 +156,21 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
   saque de portería; el excluido también vuelve si a su equipo le dan tiro libre, saque de portería o penalti.
 - El árbitro nunca inventa ni agrava: solo pita lo que clasifica `rules` (o algo más leve). El sesgo es ±12/8 % por
   punto con tope de 0,25. Hay tests de Monte Carlo (`tests/unit/arbitro.test.ts`): no romper esas bandas.
-- Equilibrio F4 (`npm run sim`, 2 periodos de 6 min): ~3,5 goles por equipo, ~2 exclusiones por equipo, ~0,25 penaltis,
-  superioridad ~35 % de gol, ~73 % de posesiones al estático con ~25 s de posesión.
+- Equilibrio F4 (`npm run sim`, 2 periodos de 6 min): ~3,7 goles por equipo, ~2,5 exclusiones por equipo, ~0,4 penaltis,
+  superioridad ~35 % de gol, ~1,6 contras con superioridad, ~77 % de posesiones al estático con ~25 s de posesión.
 - Vuelta rápida (pedida por Julián): sin superioridad (contada en toda la piscina) ni nadie solo ante el portero, el
   ataque se asienta en cuanto el balón cruza el medio campo (`transicion.margenMedio`) o a `segundosSinVentaja` de
   cambiar de manos. En posicional, quien está lejos de su puesto nada a ritmo de contra; el que lleva el balón nada
   solo a su puesto del arco (la IA, no el jugador: [FIJO] 3); los defensores esperan en la línea de recogida.
 - Aura verde (Julián: el azul se confunde con el agua) bajo el jugador que se maneja, en ataque y en defensa.
 - Zurdos siempre por la derecha del ataque (`ataque.zona.mano`); en defensa estática el cierre marca al boya rival
-  (`partido.defensa.cierreAlBoya`). `assign` prueba todas las combinaciones: los costes pueden ser negativos.
+  (`partido.defensa.cierreAlBoya`). `assign` prueba todas las combinaciones: los costes pueden ser negativos
+  (`bestMatching` también: poda con lo mínimo que pueden sumar las filas que faltan; antes podaba mal y repartía peor).
+- El boya nunca llega solo a su sitio (Julián): mientras nada hacia él en el estático, nadie que vaya por detrás se lo
+  queda (`cierreAlBoya.margen`; el cierre solo si no va detrás) y su defensor le acompaña por dentro, un poco por
+  delante y a su ritmo de contra (`centreComingIn`, `escolta`). Escaparse en un contraataque sí puede pasar. Hay un
+  test con partidos reales (antes llegaba solo el 82 % de las veces). Bajaron las contras de 2,1 a 1,6: el defensor
+  del boya ya no se quedaba arriba.
 - Solo ante el portero (`throughOnGoal`): mientras ningún defensor de campo esté más cerca de la portería que el que
   lleva el balón, el contraataque NO se asienta; puede nadar hasta `transicion.solo.cerca` (2,4 m), donde frena. En
   posicional el que lleva el balón no nada ([FIJO] 3), así que asentar antes de tiempo le deja clavado.

@@ -19,8 +19,12 @@ export function bestMatching(rows: number, cols: number, cost: (r: number, c: nu
   let bestCost = Infinity;
   // Each row either takes a free column or (only when columns run out) none.
   const spare = Math.max(0, rows - cols);
+  // Costs may be negative (a preference): prune with the least the remaining rows could still add.
+  const table = Array.from({ length: rows }, (_, r) => Array.from({ length: cols }, (_, c) => cost(r, c)));
+  const rest: number[] = Array<number>(rows + 1).fill(0);
+  for (let r = rows - 1; r >= 0; r--) rest[r] = (rest[r + 1] as number) + Math.min(spare > 0 ? 0 : Infinity, ...(table[r] as number[]));
   const search = (r: number, total: number, skipped: number): void => {
-    if (total >= bestCost) return;
+    if (total + (rest[r] as number) >= bestCost) return;
     if (r === rows) {
       bestCost = total;
       for (let i = 0; i < rows; i++) best[i] = current[i] as number;
@@ -30,7 +34,7 @@ export function bestMatching(rows: number, cols: number, cost: (r: number, c: nu
       if (used[c]) continue;
       used[c] = true;
       current[r] = c;
-      search(r + 1, total + cost(r, c), skipped);
+      search(r + 1, total + ((table[r] as number[])[c] as number), skipped);
       used[c] = false;
     }
     if (skipped < spare) {

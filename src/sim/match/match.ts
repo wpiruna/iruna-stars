@@ -508,6 +508,13 @@ export class Match {
     return att.field.find((s) => s.slot === 'boya') ?? null;
   }
 
+  /** Their centre while he is still swimming to his spot (just settled, or a new centre). */
+  private centreComingIn(): Swimmer | null {
+    const boya = this.boya;
+    if (!boya || this.drives.has(boya)) return null;
+    return dist(boya.pos, boya.target) > this.m.transicion.lejosDelPuesto ? boya : null;
+  }
+
   /** How many more players this side has in the play than the other (exclusions). */
   manUpOf(side: Side): number {
     return side.field.length - this.sides[(1 - side.index) as TeamSide].field.length;
@@ -990,14 +997,26 @@ export class Match {
     const att = this.attackingSide;
     const def = this.defendingSide;
     if (!att || !def) return;
-    // In a set defence the cierre takes their centre (Julián); on the break, whoever gets there first.
+    // Their centre (Julián): in a set defence the cierre takes him; on the break, whoever gets there
+    // first. While he is still swimming to his spot nobody takes him from behind: the one going back
+    // with him on the inside does, as in real water polo (he is never let in alone).
     const c = this.m.defensa.cierreAlBoya;
+    const goal = att.attacks;
+    const spot = this.slotAt('boya', att);
+    const positional = this.phase === 'positional';
     const preference =
-      this.phase === 'positional'
-        ? (d: Swimmer, a: Swimmer): number =>
-            a.slot === 'boya' ? (d.player.position === 'point' ? c.cierre : d.player.archetype === 'defender' ? c.defensor : 0) : 0
+      positional && this.manUpOf(att) === 0
+        ? (d: Swimmer, a: Swimmer): number => {
+            if (a.slot !== 'boya') return 0;
+            const coming = dist(a.pos, spot) > this.m.transicion.lejosDelPuesto;
+            // > 0: the defender is between him and the goal.
+            const lead = toGoal(goal, a.pos).distance - toGoal(goal, d.pos).distance;
+            if (coming && lead < -c.margen) return 0;
+            const role = d.player.position === 'point' ? c.cierre : d.player.archetype === 'defender' ? c.defensor : 0;
+            return role + (coming && lead > 0 ? c.porDentro : 0);
+          }
         : undefined;
-    const marks = assignMarks(def.field, att.field, att.attacks, this.ball.holder, this.m.transicion.peligro, preference);
+    const marks = assignMarks(def.field, att.field, goal, this.ball.holder, this.m.transicion.peligro, preference);
     for (const [d, a] of marks) {
       d.mark = a;
       d.slot = a?.slot ?? null;
@@ -1047,8 +1066,13 @@ export class Match {
       this.checkSettle(events);
     } else {
       this.positionalTargets();
-      // Just settled: whoever is still far from his spot swims there at the pace of the break.
-      for (const s of this.movers) if (dist(s.pos, s.target) > this.m.transicion.lejosDelPuesto) s.speedPenalty *= this.m.transicion.velocidad;
+      // Just settled: whoever is still far from his spot swims there at the pace of the break, and
+      // so does the one going in with their centre.
+      const centre = this.centreComingIn();
+      for (const s of this.movers) {
+        const escort = centre !== null && s.mark === centre && s.team !== centre.team;
+        if (escort || dist(s.pos, s.target) > this.m.transicion.lejosDelPuesto) s.speedPenalty *= this.m.transicion.velocidad;
+      }
       this.stepDrives(events);
       this.updateCentre(events);
     }
@@ -1299,6 +1323,20 @@ export class Match {
     }
     d.desiredFacing = angleTo(d.pos, m.pos);
     const boya = this.boya;
+    if (m === boya && m === this.centreComingIn()) {
+      // Still swimming to his spot: his defender goes in with him on the inside, a stroke ahead on
+      // his way there and at his pace (Julián: he is never let in alone). Out beyond the pick-up
+      // line he is waited for there.
+      const ahead = { x: m.pos.x + m.vel.x * 0.45, y: m.pos.y + m.vel.y * 0.45 };
+      const way = dist(ahead, m.target) > 0.3 ? dir(ahead, m.target) : dir(ahead, goal);
+      let target = add(ahead, way, this.m.defensa.cierreAlBoya.escolta);
+      const out = toGoal(goal, target);
+      const pickUp = this.m.transicion.recogida;
+      if (out.distance > pickUp) target = fromGoal(goal, pickUp, (out.lateral * pickUp) / out.distance);
+      d.target = target;
+      d.speedScale = 1;
+      return;
+    }
     if (m === boya && m !== holder) {
       const distance = this.t.boya.distanciaDefensor;
       const behind = dir(m.pos, goal);

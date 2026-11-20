@@ -6,7 +6,8 @@ import { MatchInput, type ControlContext, type MatchIntent } from '../../src/sim
 import type { Match } from '../../src/sim/match/match';
 import { assignMarks, bestMatching, countAdvantage } from '../../src/sim/match/roles';
 import type { MatchEvent } from '../../src/sim/match/types';
-import { field, makeMatch, makeSwimmer, NEUTRAL, runMatch, T } from './escena';
+import { fromGoal } from '../../src/sim/field';
+import { field, formations, makeMatch, makeSwimmer, NEUTRAL, runMatch, T } from './escena';
 
 const STEP = 1000 / 60;
 const types = (events: MatchEvent[]) => events.map((e) => e.type);
@@ -36,6 +37,13 @@ describe('marcajes, superioridad y riesgo leído', () => {
     ];
     expect(bestMatching(3, 3, (r, c) => cost[r]![c]!)).toEqual([0, 2, 1]);
     expect(bestMatching(3, 2, (r, c) => [[1, 9], [9, 1], [5, 5]][r]![c]!)).toEqual([0, 1, -1]);
+    // Negative costs (a preference): the first full answer found is not a bound for the rest.
+    const preferred = [
+      [0, 1, 9],
+      [9, 0, 0],
+      [-30, 9, -18],
+    ];
+    expect(bestMatching(3, 3, (r, c) => preferred[r]![c]!)).toEqual([1, 2, 0]);
   });
 
   it('en el repliegue, el atacante más peligroso se lo queda quien puede llegar antes', () => {
@@ -221,7 +229,8 @@ describe('máquina de estados del partido', () => {
 
   it('cada periodo termina con bocina, vuelve el sprint y tras el último se acaba el partido', () => {
     const match = makeMatch({ seed: 'periodos', periods: 2, periodSeconds: 24, clockSpeed: 3.2 });
-    const events = runMatch(match, {}, 60 * 40);
+    // Room for a penalty or a goal on the way (the clock stops for them).
+    const events = runMatch(match, {}, 60 * 60);
     const kinds = types(events);
     expect(kinds.filter((k) => k === 'periodEnd')).toHaveLength(2);
     expect(kinds.filter((k) => k === 'horn')).toHaveLength(2);
@@ -786,5 +795,46 @@ describe('puestos en el ataque estático', () => {
     expect(settles).toBeGreaterThan(20);
     expect(lefty).toBe(settles);
     expect(cierreOnBoya / checks).toBeGreaterThan(0.85);
+  });
+
+  it('el boya nunca llega solo a su sitio: su defensor va con él por dentro (Julián)', { timeout: 120_000 }, () => {
+    const near = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
+    let swimming = 0;
+    let alone = 0;
+    let arrivals = 0;
+    let unmarked = 0;
+    for (let i = 0; i < 6; i++) {
+      const match = makeMatch({ seed: `boya-${i}`, periods: 2, periodSeconds: 180 });
+      let far = false;
+      for (let steps = 0; match.phase !== 'fullTime' && steps < 60 * 60 * 5; steps++) {
+        match.step(NEUTRAL);
+        const att = match.possession;
+        // The set attack, six against six (a break that gets away is another story).
+        if (match.phase !== 'positional' || att === null || match.inPlay(att).length !== 6 || match.inPlay((1 - att) as 0 | 1).length !== 6) {
+          far = false;
+          continue;
+        }
+        const boya = match.inPlay(att).find((s) => s.slot === 'boya');
+        if (!boya || match.ball.holder === boya) continue;
+        const goal = match.goalOf(att);
+        const spot = fromGoal(goal, Math.max(T.zona.distanciaMinima, formations.ataque33?.puestos.boya?.x ?? 2), 0);
+        const closest = Math.min(...match.inPlay((1 - att) as 0 | 1).map((d) => near(d.pos, boya.pos)));
+        const toSpot = near(boya.pos, spot);
+        if (toSpot > 1 && Math.hypot(boya.vel.x, boya.vel.y) > 0.6 && Math.abs(goal.x - boya.pos.x) < 10) {
+          swimming++;
+          if (closest > 1.6) alone++;
+        }
+        if (toSpot > 3) far = true;
+        else if (toSpot < 1 && far) {
+          far = false;
+          arrivals++;
+          if (closest > 1.6) unmarked++;
+        }
+      }
+    }
+    // Before (the defender a stroke slower and behind him): alone 40 % of the way, 82 % of arrivals.
+    expect(arrivals).toBeGreaterThan(15);
+    expect(alone / swimming).toBeLessThan(0.1);
+    expect(unmarked / arrivals).toBeLessThan(0.1);
   });
 });
