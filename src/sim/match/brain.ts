@@ -193,8 +193,9 @@ export class Brain {
       const c = evaluatePass(v.world, mate, this.passTuning);
       if (!safest || c.risk < safest.risk) safest = { ...c, angleError: 0, score: 0 };
       if (c.risk > this.t.portero.riesgoMax) continue;
-      // The further up the pool, the better: that starts the counter.
-      const value = (1 - toGoal(v.goal, c.point).distance / 25) * 1.5 - c.risk * 2 + this.rng.gauss() * this.level.ruido;
+      // The further up the pool, the better: that starts the counter (more so with a good Salida).
+      const long = 1.5 * lerp(0.8, 1.3, barFactor(v.holder.player.keeperStats?.rushing ?? 5));
+      const value = (1 - toGoal(v.goal, c.point).distance / 25) * long - c.risk * 2 + this.rng.gauss() * this.level.ruido;
       if (value > bestValue) {
         bestValue = value;
         best = { ...c, angleError: 0, score: value };

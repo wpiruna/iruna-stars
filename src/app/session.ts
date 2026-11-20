@@ -16,6 +16,11 @@ export interface Session {
   debugLine(): string;
   /** Debug layer: make the referee whistle something now (matches only). */
   debugCall?(kind: DebugCall): void;
+  /** Matches: the bench menu and time-outs (GDD §11.3). */
+  openBench?(): void;
+  closeBench?(): void;
+  benchChange?(outId: string, inId: string | null): void;
+  callTimeout?(): void;
 }
 
-export type DebugCall = 'exclusionRival' | 'exclusionOurs' | 'penaltyFor' | 'penaltyAgainst' | 'offensiveFoul';
+export type DebugCall = 'exclusionRival' | 'exclusionOurs' | 'penaltyFor' | 'penaltyAgainst' | 'offensiveFoul' | 'tireOurs' | 'tireRival';

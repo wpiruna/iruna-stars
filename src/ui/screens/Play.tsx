@@ -5,6 +5,7 @@ import { DEFAULT_LAB_SETTINGS } from '../../app/play';
 import { imageUrl, playerPlaceholder } from '../../data/images';
 import { POSITION_LABEL } from '../../data/model';
 import { LAB_SPOTS, type LabSettings } from '../../sim/duel/lab';
+import { BenchPanel, EmilioBubble } from '../components/Bench';
 import { Shield } from '../components/Shield';
 import { useApp } from '../context';
 import { hud, type HudMatchStats, type HudTeam } from '../hud';
@@ -337,8 +338,10 @@ function LabPanel() {
 
 function PauseMenu() {
   const { actions } = useApp();
-  const { paused, mode } = useStore(hud);
-  if (!paused) return null;
+  const { paused, mode, bench, timeouts, match } = useStore(hud);
+  if (!paused || bench) return null;
+  // A full match (not the labs): the bench and the time-outs (GDD §11.3).
+  const full = mode === 'match' && match !== null && timeouts !== null;
   return (
     <div class="pause">
       <div class="pause__box">
@@ -346,6 +349,19 @@ function PauseMenu() {
         <button class="btn" onClick={() => actions.setPaused(false)}>
           Continuar
         </button>
+        {full && (
+          <button class="btn" onClick={actions.openBench}>
+            Banquillo
+          </button>
+        )}
+        {full && (
+          <button class="btn" onClick={actions.callTimeout} disabled={!timeouts.now}>
+            Tiempo muerto
+            <span class="btn__sub">
+              {timeouts.left === 0 ? 'No te quedan' : timeouts.now ? `Te quedan ${timeouts.left}` : `Te quedan ${timeouts.left} · solo con el balón`}
+            </span>
+          </button>
+        )}
         <button class="btn" onClick={actions.restartPlay}>
           {mode === 'lab'
             ? 'Reiniciar el laboratorio'
@@ -381,7 +397,9 @@ export function Play() {
           {mode === 'lab' ? 'Salir / pausa' : 'Pausa'} <kbd>{device === 'gamepad' ? 'Start' : 'Esc'}</kbd>
         </button>
       )}
+      <EmilioBubble />
       <PauseMenu />
+      <BenchPanel />
     </section>
   );
 }

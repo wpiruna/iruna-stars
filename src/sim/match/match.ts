@@ -16,12 +16,12 @@ import { driveDestination, insidePoint, startDrive, stepDrive, type Drive } from
 import { assign, slotCost, slotPoint, toGoal } from '../attack/formation';
 import { KeeperBody } from '../attack/keeper';
 import { moveSwimmers, updateFacing } from '../attack/movement';
-import { chooseDriver, choosePass, type DriveInfo, type PassCandidate, type PassChoice, type PassWorld } from '../attack/passing';
+import { chooseDriver, choosePass, passingBar, type DriveInfo, type PassCandidate, type PassChoice, type PassWorld } from '../attack/passing';
 import { SLOTS, type AttackTuning, type BallState, type Slot, type Swimmer, type TeamSide } from '../attack/types';
 import { add, dir, dist, dot, lerp2, norm, sigmoid, toSegment, v2 } from '../attack/vec';
 import { AiKeeper, AiShooter, type Difficulty } from '../duel/ai';
 import { aimFromPad, Duel, type Aim, type DuelConfig, type DuelEvent } from '../duel/duel';
-import { shooterProfile } from '../duel/shootout';
+import { keeperProfile, shooterProfile } from '../duel/shootout';
 import { Referee, type RefereeProfile, type RefereeTuning } from '../referee/referee';
 import {
   brutalitySeconds,
@@ -41,6 +41,7 @@ import { fromGoal, type Field, type Goal, type Vec2 } from '../field';
 import { estimateSave, planShot, resolveShot, type AimSide, type KeeperTuning, type ShotMode, type ShotPlan } from '../shooting/model';
 import { ballAt, goalVelocity, keepInNet, POOL_WALL } from '../shooting/trajectory';
 import { Brain, type BrainAction } from './brain';
+import { rest, speedFactor, stepEnergy, tiredBar } from './energy';
 import { MatchInput, type ControlContext, type MatchIntent } from './input';
 import { assignMarks, bestMatching, countAdvantage } from './roles';
 import {
@@ -176,6 +177,12 @@ export interface MatchCharging extends Charging {
   ai: { hold: number; side: AimSide; mode: ShotMode } | null;
 }
 
+/** A change from the bench: `out` leaves the water and `in` takes his place. */
+export interface Change {
+  out: Swimmer;
+  in: Swimmer;
+}
+
 type Buffered = { kind: 'pass'; aim: Vec2; at: number } | { kind: 'shot'; at: number; released: number | null };
 
 interface HumanDefence {
@@ -219,6 +226,7 @@ function makeSwimmer(player: Player, team: TeamSide, keeper: boolean, t: AttackT
     anticipation: 0,
     speedPenalty: 1,
     contactPressure: 0,
+    energy: 1,
   };
 }
 
@@ -259,6 +267,14 @@ export class Match {
   readonly referee: Referee;
   /** Personal fouls (exclusions and penalties) of each player (WP 17). */
   readonly personal = new Map<Swimmer, number>();
+  /** Time-outs each team has left (GDD §11.3: two per match). */
+  readonly timeouts: [number, number];
+  /** Changes asked for from the bench, made at the next dead ball (GDD §11.3). */
+  private readonly changes: [Change[], Change[]] = [[], []];
+  /** The period in which the AI last called a time-out. */
+  private aiTimeoutPeriod = 0;
+  /** Players already warned about their energy (until they get their breath back). */
+  private readonly warned = new Set<Swimmer>();
 
   private readonly t: AttackTuning;
   private readonly m: MatchTuning;
@@ -341,7 +357,7 @@ export class Match {
         keeperBody: new KeeperBody(
           keeper,
           defends,
-          { reflexes: s.keeper.keeperStats?.reflexes ?? 3, positioning: s.keeper.keeperStats?.positioning ?? 3, energy: 1 },
+          keeperProfile(s.keeper),
           setup.keeperTuning,
           this.t.portero,
         ),
@@ -375,6 +391,7 @@ export class Match {
     };
     this.clock = setup.periodSeconds;
     this.shotClock = setup.possession.first;
+    this.timeouts = [setup.rules.partido.tiemposMuertos, setup.rules.partido.tiemposMuertos];
     if (setup.counter) this.startCounter([]);
     else if (setup.manUp) this.startManUp([]);
     else this.startPeriod([]);
@@ -474,6 +491,11 @@ export class Match {
     return this.sides[team].attacks;
   }
 
+  /** A match spends energy (the labs do not): the view shows it under the player you control. */
+  get showsEnergy(): boolean {
+    return !this.lab;
+  }
+
   /** The swimmer the human controls (ring in the water). */
   get controlled(): Swimmer | null {
     const p = this.penalty;
@@ -513,6 +535,182 @@ export class Match {
     const boya = this.boya;
     if (!boya || this.drives.has(boya)) return null;
     return dist(boya.pos, boya.target) > this.m.transicion.lejosDelPuesto ? boya : null;
+  }
+
+  /** Habilidad as he plays it now: a tired player keeps the ball worse (GDD §11.2). */
+  private skillOf(s: Swimmer): number {
+    return tiredBar(s.player.stats.skill, s.energy, this.m.energia.efecto.habilidad, this.m.energia);
+  }
+
+  /**
+   * Energy (GDD §11.2): what each one in the water spent this step, or got back treading water;
+   * the bench gets its breath back fast. The labs are always at full strength.
+   */
+  private stepEnergy(events: MatchEvent[]): void {
+    if (this.lab) return;
+    const e = this.m.energia;
+    const contact = this.human.contact;
+    const exerting = (s: Swimmer) => ({
+      burst: this.time < s.burstUntil || (s === this.selected && this.time < this.human.burstUntil),
+      drive: this.drives.has(s),
+      wrestle: s.struggle > 0.2,
+      shoot: s.rise > 0.3,
+      contact: contact !== null && (contact.on === s || s === this.selected),
+    });
+    for (const side of this.sides) {
+      for (const s of side.field) stepEnergy(s, exerting(s), DT, e);
+      for (const ex of side.out) stepEnergy(ex.swimmer, exerting(ex.swimmer), DT, e);
+      for (const s of side.bench) rest(s, e.recuperacion.banquillo * DT, e);
+      if (!side.human) continue;
+      // Emilio shouts for a change (GDD §11.3): once, until he has got his breath back.
+      for (const s of side.field) {
+        if (s.energy < e.aviso && !this.warned.has(s)) {
+          this.warned.add(s);
+          events.push({ type: 'tired', who: s });
+        }
+      }
+    }
+    for (const s of this.warned) if (s.energy > e.aviso + 0.15) this.warned.delete(s);
+  }
+
+  /** A time-out can be called now: the team has the ball in play (or a throw of its own) and has some left. */
+  canCallTimeout(team: TeamSide): boolean {
+    if (this.lab || this.timeouts[team] <= 0 || this.possession !== team) return false;
+    if (this.phase !== 'transition' && this.phase !== 'positional' && this.phase !== 'setPiece') return false;
+    if (this.ball.flight || this.ball.free || this.ball.dead || this.charging || this.pendingRestart || this.heldCall) return false;
+    return this.ball.holder?.team === team || this.setPiece?.side === team;
+  }
+
+  /**
+   * A time-out (WP 21.4; GDD §11.3) for the team with the ball: a breather for everybody, the
+   * changes come in and the team restarts with a free throw from the half-way line, everybody in
+   * his place and the shot clock running on.
+   */
+  callTimeout(team: TeamSide, events: MatchEvent[]): boolean {
+    if (!this.canCallTimeout(team)) return false;
+    this.timeouts[team]--;
+    events.push({ type: 'whistle' }, { type: 'timeout', side: team });
+    const e = this.m.energia;
+    for (const side of this.sides) for (const s of [...side.field, ...side.bench]) rest(s, e.recuperacion.tiempoMuerto, e);
+    const att = this.sides[team];
+    const def = this.sides[(1 - team) as TeamSide];
+    const goal = att.attacks;
+    const lateral = clamp(toGoal(goal, this.ball.pos).lateral, -4, 4);
+    this.resetPlayState();
+    this.ball.holder = null;
+    for (const k of this.keepers) k.holding = false;
+    this.setPhase('positional', events);
+    this.assignSlots(att.field);
+    for (const a of att.field) this.place(a, this.slotAt(a.slot ?? 'cierre', att), angleTo(this.slotAt(a.slot ?? 'cierre', att), goal));
+    this.assignAllMarks();
+    for (const d of def.field) {
+      const at = d.mark ? insidePoint(d.mark.pos, goal, this.t.defensa.distancia) : fromGoal(goal, 3.5, 0);
+      this.place(d, at, angleTo(at, d.mark ? d.mark.pos : fromGoal(goal, 6, 0)));
+    }
+    const spot = fromGoal(goal, this.setup.field.length / 2, lateral);
+    const taker = [...att.field].sort((a, b) => dist(a.pos, spot) - dist(b.pos, spot))[0];
+    if (!taker) return true;
+    this.beginSetPiece('freeThrow', team, taker, spot, events, { reason: 'timeout', resume: 'positional' });
+    return true;
+  }
+
+  /** The AI calls a time-out in a tight finish: the last period, a goal or two down (or level), with the ball. */
+  private aiTimeout(events: MatchEvent[]): void {
+    const att = this.attackingSide;
+    if (!att || att.human || this.period < this.setup.periods || this.timeouts[att.index] <= 0) return;
+    if (this.clock > this.m.tiempoMuerto.ultimos || this.aiTimeoutPeriod === this.period) return;
+    const behind = this.score[(1 - att.index) as TeamSide] - this.score[att.index];
+    if (behind < 0 || behind > 2 || this.phase !== 'positional' || this.ball.holder?.team !== att.index) return;
+    this.aiTimeoutPeriod = this.period;
+    this.callTimeout(att.index, events);
+  }
+
+  /** The bench of a team: who is in the water, who is waiting and the changes already asked for. */
+  changesOf(team: TeamSide): readonly Change[] {
+    return this.changes[team];
+  }
+
+  /**
+   * Asks for a change (GDD §11.3): `out` (in the water) for `into` (on the bench), made at the
+   * next dead ball. Asking again for either of them replaces what was asked before.
+   */
+  requestChange(team: TeamSide, out: Swimmer, into: Swimmer): boolean {
+    const side = this.sides[team];
+    if (!side.field.includes(out) || !side.bench.includes(into) || out.excluded) return false;
+    const list = this.changes[team].filter((c) => c.out !== out && c.in !== into);
+    list.push({ out, in: into });
+    this.changes[team] = list;
+    return true;
+  }
+
+  cancelChange(team: TeamSide, out: Swimmer): void {
+    this.changes[team] = this.changes[team].filter((c) => c.out !== out);
+  }
+
+  /**
+   * A dead ball: the changes asked for are made, and the AI changes its tired players. Each
+   * substitute takes the place of the one leaving (arcade: no swim to the re-entry area).
+   * Returns who replaced whom, so a taker already chosen can be swapped too.
+   */
+  private makeChanges(events: MatchEvent[]): Map<Swimmer, Swimmer> {
+    const swapped = new Map<Swimmer, Swimmer>();
+    if (this.lab) return swapped;
+    for (const side of this.sides) {
+      const asked = side.human ? this.changes[side.index] : this.aiChanges(side);
+      this.changes[side.index] = [];
+      for (const c of asked) {
+        if (!this.swap(side, c.out, c.in)) continue;
+        swapped.set(c.out, c.in);
+        events.push({ type: 'substitution', out: c.out, in: c.in, chosen: true });
+      }
+    }
+    if (swapped.size > 0) {
+      this.refreshMovers();
+      this.afterRosterChange();
+    }
+    return swapped;
+  }
+
+  /** The AI's changes: its most tired players, for rested ones (the same position if it can). */
+  private aiChanges(side: Side): Change[] {
+    const c = this.m.cambios;
+    const tired = side.field.filter((s) => s.energy < c.cansado && !s.excluded).sort((a, b) => a.energy - b.energy);
+    const free = side.bench.filter((s) => s.energy >= c.descansado);
+    const out: Change[] = [];
+    for (const s of tired.slice(0, c.porParada)) {
+      const pick = [...free].sort((a, b) => Number(b.player.position === s.player.position) - Number(a.player.position === s.player.position) || b.energy - a.energy)[0];
+      if (!pick) break;
+      free.splice(free.indexOf(pick), 1);
+      out.push({ out: s, in: pick });
+    }
+    return out;
+  }
+
+  /** `into` takes the place of `out` in the water: his spot, his job and whoever he was marking. */
+  private swap(side: Side, out: Swimmer, into: Swimmer): boolean {
+    const i = side.field.indexOf(out);
+    const b = side.bench.indexOf(into);
+    if (i < 0 || b < 0 || out.excluded) return false;
+    side.field[i] = into;
+    side.bench.splice(b, 1);
+    side.bench.push(out);
+    into.away = false;
+    out.away = true;
+    this.place(into, out.pos, out.facing);
+    into.slot = out.slot;
+    into.mark = out.mark;
+    out.slot = null;
+    out.mark = null;
+    for (const s of this.movers) if (s.mark === out) s.mark = into;
+    if (this.selected === out) this.selected = into;
+    if (this.ball.holder === out) {
+      this.ball.holder = into;
+      into.holdTime = 0;
+    }
+    if (this.ball.lastTouch === out) this.ball.lastTouch = into;
+    this.drives.delete(out);
+    this.warned.delete(out);
+    return true;
   }
 
   /** How many more players this side has in the play than the other (exclusions). */
@@ -562,6 +760,8 @@ export class Match {
       s.contactPressure = 0;
       s.anticipation = 0;
     }
+    // Tired legs (GDD §11.2): below half the bar he swims slower.
+    if (!this.lab) for (const s of this.movers) s.speedPenalty *= speedFactor(s.energy, this.m.energia);
 
     const context = this.context();
     this.padMode = PAD_MODE[context];
@@ -624,6 +824,7 @@ export class Match {
     moveSwimmers(this.movers, DT, this.t.nado, this.setup.field.length, this.setup.field.width);
     const leaving = this.sides.flatMap((side) => side.out.map((ex) => ex.swimmer));
     if (leaving.length > 0) moveSwimmers(leaving, DT, this.t.nado, this.setup.field.length, this.setup.field.width);
+    this.stepEnergy(events);
     for (const side of this.sides) {
       const body = side.keeperBody;
       if (this.penalty?.duel && this.penalty.keeper === body) this.mirrorPenaltyKeeper(this.penalty.duel, body);
@@ -712,6 +913,7 @@ export class Match {
       for (const ex of [...side.out]) if (!ex.brutal) this.bringBack(side, ex, 'time', events, true);
       side.rotated = false;
     }
+    this.makeChanges(events);
     this.resetPlayState();
     this.possession = null;
     this.ball.holder = null;
@@ -853,6 +1055,8 @@ export class Match {
   ): void {
     const s = this.m.saque;
     const reason = kind === 'freeThrow' ? (options.reason ?? 'clock') : null;
+    // A dead ball: the changes come in now (the taker too, if he is the one going off).
+    taker = this.makeChanges(events).get(taker) ?? taker;
     this.pendingRestart = null;
     this.charging = null;
     this.drives.clear();
@@ -874,7 +1078,8 @@ export class Match {
     this.noShot = reason === 'foul' ? taker : null;
     this.directUntil = reason === 'foul' && options.direct ? Infinity : -1;
     // A throw for the team of an excluded player lets him back in (WP 10.5.2.4).
-    if (kind === 'freeThrow' || kind === 'goalThrow') this.endExclusions(side, 'throw', events);
+    // (Not the restart after a time-out: the team already had the ball.)
+    if ((kind === 'freeThrow' && reason !== 'timeout') || kind === 'goalThrow') this.endExclusions(side, 'throw', events);
     this.setPhase('setPiece', events);
     events.push({ type: 'setPiece', kind, side, reason });
   }
@@ -915,6 +1120,8 @@ export class Match {
     this.ball.dead = true;
     for (const k of this.keepers) k.holding = false;
     this.phaseTimer = this.period === this.setup.periods / 2 ? this.m.periodo.mitad : this.m.periodo.descanso;
+    // The break between periods gives everybody some breath back (GDD §11.2).
+    if (!this.lab) for (const side of this.sides) for (const s of [...side.field, ...side.bench]) rest(s, this.m.energia.recuperacion.descanso, this.m.energia);
     events.push({ type: 'horn' }, { type: 'periodEnd', period: this.period });
     this.setPhase('periodEnd', events);
   }
@@ -1056,6 +1263,10 @@ export class Match {
       return;
     }
     this.stats[att.index].possession += DT;
+    if (!this.lab) {
+      this.aiTimeout(events);
+      if (this.phase !== 'transition' && this.phase !== 'positional') return;
+    }
 
     this.handleHuman(intents, context, events);
     if (this.phase === 'transition') {
@@ -1643,7 +1854,7 @@ export class Match {
     if (holder && holder.team !== sel.team && !holder.keeper && dist(sel.pos, holder.pos) < d.robo.distancia) {
       if (this.time < h.stealReady) return;
       h.stealReady = this.time + d.robo.enfriamiento;
-      let p = d.robo.base + d.robo.escala * sigmoid(d.robo.pendiente * (barFactor(sel.player.stats.defense) - barFactor(holder.player.stats.skill)));
+      let p = d.robo.base + d.robo.escala * sigmoid(d.robo.pendiente * (barFactor(sel.player.stats.defense) - barFactor(this.skillOf(holder))));
       if (this.time < holder.protectUntil) p *= 0.3;
       const won = this.setup.rng.chance(p);
       events.push({ type: 'stealTry', by: sel, won });
@@ -1759,6 +1970,17 @@ export class Match {
     }
   }
 
+  /**
+   * A shooter alone in front of him and close (nobody nearer the goal, nobody on him): the keeper
+   * comes off his line to close the angle (Salida; more for a Kamikaze).
+   */
+  private rushOf(keeper: KeeperBody, shooter: Swimmer): number {
+    const s = this.setup.keeperTuning.salida;
+    if (toGoal(this.sides[shooter.team].attacks, shooter.pos).distance > s.distancia || !this.throughOnGoal(shooter)) return 0;
+    if (this.sides[(1 - shooter.team) as TeamSide].field.some((d) => dist(d.pos, shooter.pos) < this.m.transicion.libre)) return 0;
+    return barFactor(keeper.profile.rushing ?? 3) * (keeper.profile.trait === 'kamikaze' ? s.kamikaze : 1);
+  }
+
   /** Estimated chance that a shot by this player right now is a goal (what the AI weighs up). */
   goalChance(shooter: Swimmer): number {
     const team = shooter.team;
@@ -1772,13 +1994,13 @@ export class Match {
     for (let i = 0; i < samples; i++) {
       const plan = planShot(
         { from: shooter.pos, releaseHeight: 0.8, charge: shotT.zonaOptimaCentro, side: keeper.u > 0 ? -1 : 1, mode: 'direct', pressure },
-        { power: shooter.player.stats.power, accuracy: shooter.player.stats.accuracy, energy: 1 },
+        { power: shooter.player.stats.power, accuracy: shooter.player.stats.accuracy, energy: shooter.energy },
         goal,
         keeper.u,
         this.xg,
         shotT,
       );
-      if (plan.landing === 'onTarget') sum += 1 - estimateSave(plan, keeper.profile, { u: keeper.u, set: 1 }, 'open', this.setup.keeperTuning).probability;
+      if (plan.landing === 'onTarget') sum += 1 - estimateSave(plan, keeper.profile, { u: keeper.u, set: 1, rushed: this.rushOf(keeper, shooter) }, 'open', this.setup.keeperTuning).probability;
       else if (plan.landing === 'post' || plan.landing === 'bar') sum += shotT.paloYDentro * 0.5;
     }
     return sum / samples;
@@ -1801,6 +2023,7 @@ export class Match {
       from: { ...this.ball.pos },
       teammates: [...side.field, side.keeper].filter((s) => s !== holder),
       defenders: other.field,
+      keeper: other.keeper,
       goal: side.attacks,
       drives,
       boya: this.boya?.team === holder.team ? this.boya : null,
@@ -1833,7 +2056,13 @@ export class Match {
         break;
       }
     }
-    const sigma = lerp(t.error.max, t.error.min, barFactor(holder.player.stats.passing)) * Math.pow(Math.max(1, c.distance) / 6, 0.8);
+    // The keeper comes out for it: a dive towards where he cuts it out.
+    if (interceptor?.keeper) {
+      const body = this.sides[interceptor.team].keeperBody;
+      const y = from.y + (c.point.y - from.y) * endAt;
+      body.dive(y - body.goal.y, Math.max(0.15, (dist(from, c.point) / c.speed) * endAt), this.time);
+    }
+    const sigma = lerp(t.error.max, t.error.min, barFactor(passingBar(holder))) * Math.pow(Math.max(1, c.distance) / 6, 0.8);
     const across = norm({ x: -(c.point.y - from.y), y: c.point.x - from.x });
     const error = interceptor ? 0 : rng.gauss() * sigma;
     const to = { x: c.point.x + across.x * error, y: c.point.y + across.y * error, z: c.endZ };
@@ -1953,7 +2182,7 @@ export class Match {
   }
 
   private centreStrength(boya: Swimmer, defender: Swimmer | null): { attack: number; defence: number } {
-    const attack = 0.8 * barFactor(boya.player.stats.skill) + 0.2;
+    const attack = 0.8 * barFactor(this.skillOf(boya)) + 0.2;
     const defence = defender ? (barFactor(defender.player.stats.defense) + barFactor(defender.player.stats.aggression)) / 2 : 0;
     return { attack, defence };
   }
@@ -2114,7 +2343,7 @@ export class Match {
     const rng = this.setup.rng;
     const plan = planShot(
       { from: { x: this.ball.pos.x, y: this.ball.pos.y }, releaseHeight: this.ball.pos.z, charge: quick ? null : c.charge, side: c.aim.side, mode: c.aim.mode, pressure },
-      { power: shooter.player.stats.power, accuracy: shooter.player.stats.accuracy, energy: 1 },
+      { power: shooter.player.stats.power, accuracy: shooter.player.stats.accuracy, energy: shooter.energy },
       goal,
       keeper.u,
       rng,
@@ -2139,7 +2368,7 @@ export class Match {
       events.push({ type: 'block', by: blocker });
       return;
     }
-    const result = resolveShot(plan, goal, keeper.profile, { u: keeper.u, set: clamp(c.time / 0.5, 0, 1) }, 'open', rng, shotTuning, this.setup.keeperTuning);
+    const result = resolveShot(plan, goal, keeper.profile, { u: keeper.u, set: clamp(c.time / 0.5, 0, 1), rushed: this.rushOf(keeper, shooter) }, 'open', rng, shotTuning, this.setup.keeperTuning);
     this.ball.flight = { kind: 'shot', shooter, plan, outcome: result.outcome, save: result.save, t: 0, bounced: false };
     if (result.outcome.type === 'save') {
       keeper.hands = clamp(plan.arrival.v, 0.1, goal.height + 0.2);
@@ -3087,7 +3316,7 @@ export class Match {
     if (holder.holdTime < r.tiempoMinimo) return;
     const defender = this.defenderOf(holder);
     if (!defender || defender === this.selected || dist(defender.pos, holder.pos) > r.distancia) return;
-    let rate = lerp(r.porSegundo.min, r.porSegundo.max, sigmoid(r.pendiente * (barFactor(defender.player.stats.defense) - barFactor(holder.player.stats.skill))));
+    let rate = lerp(r.porSegundo.min, r.porSegundo.max, sigmoid(r.pendiente * (barFactor(defender.player.stats.defense) - barFactor(this.skillOf(holder)))));
     if (holder === this.boya) rate *= 1 + Math.max(0, -this.post);
     // Swimming with the ball on the break is hard to take off: most breaks reach the set play.
     if (this.phase === 'transition') rate *= this.m.transicion.robo;

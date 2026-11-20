@@ -24,12 +24,19 @@ const SettingsSchema = z.object({
   /** Background of water and crowd: normal, low or none. */
   ambience: z.enum(['normal', 'bajo', 'no']).default('normal'),
   difficulty: z.enum(['facil', 'normal', 'dificil']).default('normal'),
+  /** Our cap (GDD §3.2): white with blue numbers or blue with white ones; the rival wears the other. */
+  cap: z.enum(['white', 'blue']).default('white'),
 });
 export type Settings = z.infer<typeof SettingsSchema>;
 
 const SaveSchema = z.object({
   version: z.literal(SAVE_VERSION),
   settings: SettingsSchema.default(() => SettingsSchema.parse({})),
+  /** The last convocatoria (player IDs), so the next match starts from it (GDD §3.2). */
+  squad: z
+    .object({ starters: z.array(z.string()), keeper: z.string().nullable(), bench: z.array(z.string()) })
+    .nullable()
+    .default(null),
   /** Filled in from F6. Kept as opaque records so older saves stay readable. */
   cup: z.unknown().nullable().default(null),
   history: z.array(z.unknown()).default(() => []),
@@ -64,7 +71,7 @@ export function parseSave(raw: string | null): SaveData {
     const attempt = SettingsSchema.safeParse({ ...save.settings, [key]: stored[key] });
     if (stored[key] !== undefined && attempt.success) save.settings = attempt.data;
   }
-  for (const key of ['history', 'records', 'album', 'cup'] as const) {
+  for (const key of ['history', 'records', 'album', 'cup', 'squad'] as const) {
     const attempt = SaveSchema.safeParse({ ...save, [key]: source[key] });
     if (source[key] !== undefined && attempt.success) Object.assign(save, { [key]: attempt.data[key] });
   }

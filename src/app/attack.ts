@@ -10,6 +10,7 @@ import type { Team } from '../data/model';
 import type { Controller } from '../input/controller';
 import type { SaveStore } from '../persist/storage';
 import { BEHIND_GOAL } from '../render/pool';
+import { capsOf } from './squad';
 import { PlayView } from '../render/playview';
 import { TILT, type Camera } from '../render/camera';
 import type { Goal } from '../sim/field';
@@ -105,6 +106,7 @@ export class AttackSession implements Session {
         },
       },
       (camera, snap) => frameAttack(camera, this.drill.goal, this.drill.ball.pos.y, snap),
+      capsOf(deps.save.settings.cap),
     );
     this.view = this.attackView.view;
     // Thursday training: the water, but nobody in the stands.

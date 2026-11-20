@@ -5,8 +5,8 @@ Juego arcade de waterpolo en 2D para móvil (y PC), protagonizado por el Waterpo
 
 Se trabaja por fases (GDD §21). Cada fase termina jugable, publicada y con su lista de pruebas en
 `docs/PRUEBAS/Fn.md`. **No se empieza la fase siguiente sin el visto bueno de Julián.**
-Fase actual: **F4 (reglas y árbitro) terminada y publicada**; pendiente del visto bueno de Julián para empezar F5
-(nuestros jugadores: estadísticas, energía, banquillo y cambios). F0, F1, F2 y F3 aprobadas.
+Fase actual: **F5 (nuestros jugadores: estadísticas, energía, banquillo y cambios, tiempos muertos, convocatoria con
+fotos, gorro, porteros con Salida y rasgos)**, en curso. F0–F4 aprobadas (F4 el 20-11-2026).
 
 Publicado en <https://wpiruna.github.io/iruna-stars/> desde el repositorio público `wpiruna/iruna-stars`.
 Cada push a `main` convierte los datos, pasa los tests, compila y publica (`.github/workflows/publicar.yml`).
@@ -29,7 +29,7 @@ Depuración: `F3` o `º`, `?debug=1` en la dirección, o cinco toques sobre la l
 `ataque&rival=<id>&escenario=completo|entradas|boya|contra2x1|contra3x2|superioridad|inferioridad`,
 `partido&rival=<id>&arbitro=<id>&minutos=1`, `tanda`, `entrenamiento`, `amistoso`, `ajustes`…); `?carga=16` multiplica
 la escena de la portada. En un partido, la capa de depuración tiene la fila *Árbitro* (excluir rival o nuestro, penalti
-a favor o en contra) para probar sin esperar.
+a favor o en contra) y la fila *Energía* (cansar a los nuestros o al rival) para probar sin esperar.
 
 Al parar servidores de prueba no usar `pkill -f` con un patrón que también aparezca en la misma orden: se mata a sí
 misma. Mejor `kill` con el número de proceso.
@@ -67,17 +67,20 @@ src/input/             mando virtual (teclado, mando, táctil) y reconocedor de 
 src/render/            agua (shader), piscina y porterías, cámara, jugadores, balón, efectos; playview.ts dibuja
                        el juego en el agua (anillo, flecha de pase con color de riesgo, entradas, ¡LIBRE!)
 src/sim/match/         partido: match.ts (máquina de estados, posesión, saques, relojes, balón, faltas, exclusiones,
-                       penaltis con el duelo de la tanda, cambios por expulsión), brain.ts (IA con balón), input.ts
-                       (gramática según el momento), roles.ts (repliegue, superioridad del contraataque)
+                       penaltis con el duelo de la tanda, cambios, tiempos muertos), brain.ts (IA con balón), input.ts
+                       (gramática según el momento), roles.ts (repliegue, superioridad del contraataque), energy.ts
+                       (energía: gasto, recuperación y efectos)
 src/sim/rules/         reglamento puro: qué es cada contacto (nada, ordinaria, exclusión, penalti, violenta), área
                        de gol, tiros libres, córner o saque de portería, relojes tras exclusión
 src/sim/referee/       árbitro: si pita lo clasificado (perfil, sesgo acotado, "día" por partido), tarjetas
 src/app/session.ts     interfaz común de lo que se juega; play.ts (tanda y laboratorio), attack.ts (entrenamiento),
-                       match.ts (partido y laboratorios de contraataque; dirige la cámara), replay.ts (repetición)
+                       match.ts (partido y laboratorios de contraataque; dirige la cámara, banquillo y Emilio),
+                       replay.ts (repetición), squad.ts (convocatoria guardada → jugadores, gorro)
                        convierten eventos de la simulación en imagen, sonido, vibración y HUD
 src/audio/sfx.ts       efectos sintetizados con WebAudio y el ambiente (agua y público que reacciona); app/ambience.ts
                        calcula cuánto nadan para el agua
-src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/debug/
+src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador; components/Bench.tsx banquillo y Emilio;
+              screens/SquadSetup.tsx convocatoria y gorro)  src/app/  src/debug/
 ```
 
 ## Convenciones
@@ -156,8 +159,9 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
   saque de portería; el excluido también vuelve si a su equipo le dan tiro libre, saque de portería o penalti.
 - El árbitro nunca inventa ni agrava: solo pita lo que clasifica `rules` (o algo más leve). El sesgo es ±12/8 % por
   punto con tope de 0,25. Hay tests de Monte Carlo (`tests/unit/arbitro.test.ts`): no romper esas bandas.
-- Equilibrio F4 (`npm run sim`, 2 periodos de 6 min): ~3,7 goles por equipo, ~2,5 exclusiones por equipo, ~0,4 penaltis,
-  superioridad ~35 % de gol, ~1,6 contras con superioridad, ~77 % de posesiones al estático con ~25 s de posesión.
+- Equilibrio (`npm run sim`, 2 periodos de 6 min, con energía y cambios de la IA): ~3,5 goles por equipo, ~2,5
+  exclusiones por equipo, ~0,4 penaltis, superioridad ~31–35 % de gol, ~1,5 contras con superioridad, ~78 % de posesiones
+  al estático con ~25 s de posesión, ~1,7 cambios desde el banquillo por equipo. `npm run sim` también da la energía.
 - Vuelta rápida (pedida por Julián): sin superioridad (contada en toda la piscina) ni nadie solo ante el portero, el
   ataque se asienta en cuanto el balón cruza el medio campo (`transicion.margenMedio`) o a `segundosSinVentaja` de
   cambiar de manos. En posicional, quien está lejos de su puesto nada a ritmo de contra; el que lleva el balón nada
@@ -198,3 +202,22 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador)  src/app/  src/
   `Play.tsx`) que sustituye al marcador hasta que acaba la repetición: cromo con la foto especial (la segunda) si es
   nuestro, escudo si es del rival, «N.º GOL» si repite. El público aplaude toda la repetición. Los laboratorios
   conservan el rótulo central.
+- Energía (F5, `partido.energia`, `src/sim/match/energy.ts`): en segundos reales; gasta al nadar por encima del 45 % de su
+  velocidad máxima, en acelerones, entradas, lucha, tiro y contacto; recupera flotando, mucho en el banquillo, de golpe
+  en el descanso y en el tiempo muerto. Calibrada sin cambios: Resistencia 1 → ~37 % al acabar el 1.er periodo y casi
+  vacío al final; 5 → ~56 % y ~38 %; 10 → >75 % todo el partido. Por debajo de la mitad: hasta −35 % de velocidad, tiro
+  más flojo y desviado (modelo de tiro) y −2,5 puntos de Habilidad. Los laboratorios no gastan. Tests en
+  `tests/unit/energia.test.ts`.
+- Cambios (F5): los pedidos desde Pausa → Banquillo entran en el **siguiente balón parado** (falta, saque, gol, periodo,
+  tiempo muerto) en el sitio del que sale (arcade: sin nadar a la zona de reentrada); sin límite de cambios. La IA cambia
+  sola a los que bajan de 0,35 (`partido.cambios`); nuestros solo si Julián lo pide. Emilio grita «¡CAMBIO!» (bocadillo
+  con su foto) cuando uno de los nuestros baja del 25 %. Solo jugadores de campo: el portero no se cambia.
+- Tiempos muertos (F5): 2 por equipo (`reglas.json`), solo con el balón (WP); reanuda con un libre desde el medio campo
+  sin reiniciar la posesión y sin devolver a los excluidos. La IA pide uno en el último minuto y medio si va empatada o
+  perdiendo de 1–2. En el descanso se abre solo el banquillo con un consejo de Emilio.
+- Convocatoria (F5): en el Amistoso, tras elegir rival; se guarda por ID (`save.squad`) y se completa sola si falta alguien
+  (`resolveSquad`). El gorro (`settings.cap`) vale para partido, entrenamiento y tanda; el rival lleva el otro.
+- Porteros (F5): Salida cuenta en tres sitios: corta pases a su área (el portero entra en `passRisk` como un cortador más,
+  sin escudo del receptor y con `pase.defensor.portero.factor`; la IA evita esos pases), sale ante un tirador solo y
+  cercano (+alcance, `portero.salida`) y saca en largo (su pase usa Salida en vez de Pase). Rasgos: Muro +8 % de alcance,
+  Kamikaze sale 1,5 veces más y corta más, Inseguro deja entrar el 5 % de las que para (¡CANTADA!).

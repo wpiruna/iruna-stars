@@ -134,6 +134,17 @@
     "blocaje": {
       "velocidadMaxima": 17,
       "margenMinimo": 0.25
+    },
+    "salida": {
+      "_nota": "Salida (GDD §10): ante un tirador solo a menos de 'distancia' m, el portero sale y cierra el ángulo: gana hasta 'alcance' m de alcance con Salida 10 (el Kamikaze sale 'kamikaze' veces más).",
+      "alcance": 0.35,
+      "distancia": 5,
+      "kamikaze": 1.5
+    },
+    "rasgos": {
+      "_nota": "Rasgos del portero: Muro multiplica su alcance por 1 + 'muro'; Inseguro deja entrar, con probabilidad 'inseguro', uno que tenía parado (la cantada).",
+      "muro": 0.08,
+      "inseguro": 0.05
     }
   },
   "penalti": {
@@ -279,7 +290,8 @@
         "aceleracion": 6,
         "factorPropio": 0.3,
         "rodeo": 0.5,
-        "alcanceAnticipacion": 0.35
+        "alcanceAnticipacion": 0.35,
+        "portero": { "_nota": "El portero rival también corta pases a su área (GDD §10): reacciona según su Salida, llega a 'alcance' m con los brazos (más 'kamikaze' si tiene ese rasgo) y hasta 'altura' m de alto; el cuerpo del receptor no le tapa y su probabilidad se multiplica por 'factor'.", "alcance": 1.2, "altura": 2.1, "kamikaze": 0.4, "factor": 0.35 }
       },
       "colores": {
         "verde": 0.2,
@@ -673,6 +685,27 @@
       "velocidad": 0.4,
       "zoom": 1.25,
       "guardar": 4
+    },
+    "energia": {
+      "_nota": "Energía (GDD §11.2), de 0 a 1, en segundos reales. Nadar por encima de 'esfuerzo.desde' de su velocidad máxima gasta 'gasto.nado' por segundo a tope (elevado a 'curva'); acelerón, entrada, lucha, tiro y contacto suman lo suyo. Si no se esfuerza, recupera 'recuperacion.agua' por segundo; en el banquillo 'banquillo'; al acabar un periodo 'descanso' y en un tiempo muerto 'tiempoMuerto' de golpe. La Resistencia multiplica el gasto (de 'gasto.max' con 1 a 'gasto.min' con 10) y la recuperación; el rasgo Diésel multiplica el gasto por 'diesel'. Por debajo de 'umbral' nada más lento (hasta 'efecto.velocidad' menos con la barra vacía) y pierde puntos de Habilidad ('efecto.habilidad'); el tiro pierde fuerza y precisión en el modelo de tiro.",
+      "esfuerzo": { "desde": 0.45, "max": 1.4 },
+      "gasto": { "nado": 0.0036, "curva": 1.2, "aceleron": 0.035, "entrada": 0.007, "lucha": 0.007, "tiro": 0.011, "contacto": 0.007 },
+      "recuperacion": { "agua": 0.0015, "banquillo": 0.016, "descanso": 0.2, "tiempoMuerto": 0.1 },
+      "resistencia": { "gasto": { "min": 0.6, "max": 1.5 }, "recuperacion": { "min": 0.7, "max": 1.35 } },
+      "diesel": 0.8,
+      "umbral": 0.5,
+      "efecto": { "velocidad": 0.35, "habilidad": 2.5 },
+      "aviso": 0.25
+    },
+    "tiempoMuerto": {
+      "_nota": "La IA pide tiempo muerto en el último periodo cuando quedan menos de 'ultimos' segundos de marcador, va empatada o perdiendo de uno o dos y tiene el balón en ataque estático (una vez por periodo).",
+      "ultimos": 90
+    },
+    "cambios": {
+      "_nota": "Cambios de la IA (GDD §11.3) en cada balón parado: saca a los que bajan de 'cansado' (los más cansados primero, como mucho 'porParada') por suplentes con al menos 'descansado', del mismo puesto si puede.",
+      "cansado": 0.35,
+      "descansado": 0.7,
+      "porParada": 2
     }
   },
   "arbitro": {

@@ -91,6 +91,39 @@ export interface HudGoal {
   leaving: boolean;
 }
 
+/** One of ours in the bench menu (GDD §11.3). */
+export interface HudBenchPlayer {
+  /** The swimmer's id in the match. */
+  id: string;
+  number: number;
+  nickname: string;
+  position: Position;
+  photo?: string;
+  /** 0–1. */
+  energy: number;
+  /** Sent off for a while: he cannot go off now. */
+  excluded: boolean;
+}
+
+/** The bench menu: from the pause, in a time-out of ours or in the break between periods. */
+export interface HudBench {
+  reason: 'pause' | 'timeout' | 'break';
+  water: HudBenchPlayer[];
+  bench: HudBenchPlayer[];
+  /** Changes asked for: who goes off and who comes in. */
+  changes: { out: string; in: string }[];
+  /** Emilio's line (time-out and break). */
+  tip: string;
+}
+
+/** Emilio shouting from the bench: a speech bubble with his photo (GDD §11.3). */
+export interface HudEmilio {
+  id: number;
+  text: string;
+  /** The player he means, e.g. "Nº 7 TAINTA". */
+  who?: string;
+}
+
 export interface HudState {
   mode: 'shootout' | 'lab' | 'attack' | 'match' | null;
   teams: [HudTeam, HudTeam] | null;
@@ -117,6 +150,11 @@ export interface HudState {
   /** A goal replay is playing. */
   replay: boolean;
   goal: HudGoal | null;
+  /** The bench menu, when it is open. */
+  bench: HudBench | null;
+  /** Time-outs we have left and whether one can be called now (we have the ball). */
+  timeouts: { left: number; now: boolean } | null;
+  emilio: HudEmilio | null;
 }
 
 export const emptyHud = (): HudState => ({
@@ -138,6 +176,9 @@ export const emptyHud = (): HudState => ({
   match: null,
   replay: false,
   goal: null,
+  bench: null,
+  timeouts: null,
+  emilio: null,
 });
 
 export const hud = createStore<HudState>(emptyHud());

@@ -96,6 +96,7 @@ function makeSwimmer(player: Player, team: TeamSide, keeper: boolean, t: AttackT
     anticipation: 0,
     speedPenalty: 1,
     contactPressure: 0,
+    energy: 1,
   };
 }
 

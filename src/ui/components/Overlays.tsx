@@ -113,6 +113,13 @@ export function DebugPanel() {
           <button onClick={() => actions.debugCall('offensiveFoul')}>falta en ataque</button>
         </div>
       )}
+      {mode === 'match' && (
+        <div class="debug__row">
+          <span>Energía</span>
+          <button onClick={() => actions.debugCall('tireOurs')}>cansar a los nuestros</button>
+          <button onClick={() => actions.debugCall('tireRival')}>cansar al rival</button>
+        </div>
+      )}
       <div class="debug__row">
         <span>Carga</span>
         {LOADS.map((load) => (

@@ -80,6 +80,7 @@ export function makeSwimmer(x: number, y: number, team: TeamSide, stats: Partial
     anticipation: 0,
     speedPenalty: 1,
     contactPressure: 0,
+    energy: 1,
   };
 }
 

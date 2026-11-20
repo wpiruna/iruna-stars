@@ -187,6 +187,18 @@ export async function startGame(gameHost: HTMLElement, controlsHost: HTMLElement
     setPaused(paused) {
       session?.setPaused(paused);
     },
+    openBench() {
+      session?.openBench?.();
+    },
+    closeBench() {
+      session?.closeBench?.();
+    },
+    benchChange(outId, inId) {
+      session?.benchChange?.(outId, inId);
+    },
+    callTimeout() {
+      session?.callTimeout?.();
+    },
     configureLab(settings) {
       labSettings = settings;
       if (session instanceof PlaySession) session.configureLab(settings);

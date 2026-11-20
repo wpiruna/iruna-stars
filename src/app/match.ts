@@ -21,9 +21,10 @@ import { fieldFromRules } from '../sim/field';
 import { Match } from '../sim/match/match';
 import type { Swimmer } from '../sim/attack/types';
 import type { MatchEvent } from '../sim/match/types';
-import { emptyHud, hud, type BannerTone } from '../ui/hud';
+import { emptyHud, hud, type BannerTone, type HudBench, type HudBenchPlayer } from '../ui/hud';
 import { swimActivity } from './ambience';
 import { GoalReplay } from './replay';
+import { capsOf, resolveSquad } from './squad';
 import type { Goal } from '../sim/field';
 import { frameAttack } from './attack';
 import { vibrate } from './platform';
@@ -85,6 +86,16 @@ export class MatchSession implements Session {
   private readonly tally = new Map<Player, number>();
   private goalId = 0;
   private goalTimer = -1;
+  /** The bench menu (GDD §11.3): why it is open, and Emilio's line. */
+  private benchReason: HudBench['reason'] | null = null;
+  private benchTip = '';
+  /** Seconds until the bench opens in the break between periods (after the horn's caption). */
+  private breakTimer = -1;
+  /** Emilio's speech bubble: seconds it stays up. */
+  private emilioId = 0;
+  private emilioTimer = -1;
+  /** Changes made this step, for a single caption. */
+  private readonly changeNotes: [string[], string[]] = [[], []];
 
   constructor(
     private readonly deps: MatchDeps,
@@ -100,7 +111,9 @@ export class MatchSession implements Session {
     const field = fieldFromRules(data.rules);
     const ours = data.ourTeam;
     const hand = data.tuning.ataque.zona.mano;
-    const ourField = [...pickLineup(ours.players, SLOTS, hand).keys()];
+    // Ours: the convocatoria (GDD §3.2), with any gap filled in automatically.
+    const squad = resolveSquad(ours, save.get().squad, data.rules.convocatoria.suplentes, hand);
+    const ourField = squad.field;
     const rivalField = [...pickLineup(rival.players, SLOTS, hand).keys()];
     const bench = (team: Team, lineup: Player[]): Player[] =>
       team.players.filter((p) => p.position !== 'goalkeeper' && !lineup.includes(p)).slice(0, data.rules.convocatoria.suplentes);
@@ -115,7 +128,7 @@ export class MatchSession implements Session {
       field,
       formations: data.formations,
       sides: [
-        { team: ours, field: counter ? ourField.slice(0, counter.attackers) : ourField, bench: counter ? [] : bench(ours, ourField), keeper: pickKeeper(ours), human: true },
+        { team: ours, field: counter ? ourField.slice(0, counter.attackers) : ourField, bench: counter ? [] : squad.bench, keeper: squad.keeper, human: true },
         { team: rival, field: counter ? rivalField.slice(0, counter.defenders) : rivalField, bench: counter ? [] : bench(rival, rivalField), keeper: pickKeeper(rival), human: false },
       ],
       rules: data.rules,
@@ -162,6 +175,7 @@ export class MatchSession implements Session {
         },
       },
       (camera, snap) => this.direct(camera, snap),
+      capsOf(save.settings.cap),
     );
     this.view = this.playView.view;
     // Water always; a crowd only for real matches (the labs are training).
@@ -291,7 +305,97 @@ export class MatchSession implements Session {
   }
 
   setPaused(paused: boolean): void {
+    if (paused && !this.counter && !this.manUp) hud.set({ timeouts: { left: this.match.timeouts[0], now: this.match.canCallTimeout(0) } });
     if (hud.get().paused !== paused) hud.set({ paused });
+  }
+
+  /** The bench menu from the pause: changes for the next dead ball. */
+  openBench(): void {
+    this.showBench('pause');
+  }
+
+  private showBench(reason: HudBench['reason'], tip = ''): void {
+    if (this.counter || this.manUp) return;
+    this.benchReason = reason;
+    this.benchTip = tip;
+    this.setPaused(true);
+    this.refreshBench();
+  }
+
+  private refreshBench(): void {
+    if (!this.benchReason) return;
+    const m = this.match;
+    const card = (s: Swimmer): HudBenchPlayer => ({
+      id: s.id,
+      number: s.player.number,
+      nickname: s.player.nickname,
+      position: s.player.position,
+      energy: s.energy,
+      excluded: s.excluded === true,
+      ...(s.player.photos[0] ? { photo: s.player.photos[0] } : {}),
+    });
+    // The six of the play, the excluded ones included (they cannot go off while they are out).
+    const water = [...m.inPlay(0), ...m.exclusions.filter((e) => e.swimmer.team === 0 && !e.forGame).map((e) => e.swimmer)];
+    water.sort((a, b) => a.player.number - b.player.number);
+    hud.set({
+      bench: {
+        reason: this.benchReason,
+        water: water.map(card),
+        bench: [...m.benchOf(0)].sort((a, b) => a.player.number - b.player.number).map(card),
+        changes: m.changesOf(0).map((c) => ({ out: c.out.id, in: c.in.id })),
+        tip: this.benchTip,
+      },
+    });
+  }
+
+  /** Done with the bench: after a time-out or the break the match goes on; from the pause, back to it. */
+  closeBench(): void {
+    const reason = this.benchReason;
+    if (!reason) return;
+    this.benchReason = null;
+    hud.set({ bench: null });
+    if (reason === 'timeout') {
+      const events: MatchEvent[] = [];
+      this.match.callTimeout(0, events);
+      for (const event of events) this.handle(event);
+      this.flushChangeNotes();
+    }
+    if (reason !== 'pause') this.setPaused(false);
+  }
+
+  benchChange(outId: string, inId: string | null): void {
+    const m = this.match;
+    const out = m.all.find((s) => s.id === outId);
+    if (!out) return;
+    if (inId === null) m.cancelChange(0, out);
+    else {
+      const into = m.all.find((s) => s.id === inId);
+      if (into) m.requestChange(0, out, into);
+    }
+    this.deps.sfx.play('click');
+    this.refreshBench();
+  }
+
+  /** Our time-out (only with the ball): the bench opens with Emilio's advice; it is called when it closes. */
+  callTimeout(): void {
+    if (!this.match.canCallTimeout(0)) return;
+    const { data } = this.deps;
+    this.showBench('timeout', pickPhrase(data, 'emilio_tiempo_muerto', () => this.rng.next(), this.rival.id, this.rival.name));
+  }
+
+  /** Emilio shouts from the bench, with his photo. */
+  private emilio(text: string, whoText?: string): void {
+    hud.set({ emilio: { id: ++this.emilioId, text, ...(whoText ? { who: whoText } : {}) } });
+    this.emilioTimer = 4.5;
+  }
+
+  /** One caption for the changes made at a dead ball (ours and theirs). */
+  private flushChangeNotes(): void {
+    const [ours, theirs] = this.changeNotes;
+    if (ours.length > 0) this.banner('CAMBIO', 'neutral', ours.join(' · '));
+    else if (theirs.length > 0) this.banner(`CAMBIO ${this.rival.code}`, 'neutral', theirs.join(' · '));
+    ours.length = 0;
+    theirs.length = 0;
   }
 
   step(): void {
@@ -319,6 +423,16 @@ export class MatchSession implements Session {
     const events = this.match.step({ x: input.x, y: input.y, touching: input.touching, shot: input.shot, skill: input.skill });
     this.replay?.record(events);
     for (const event of events) this.handle(event);
+    this.flushChangeNotes();
+    if (this.emilioTimer >= 0) {
+      this.emilioTimer -= 1 / 60;
+      if (this.emilioTimer < 0) hud.set({ emilio: null });
+    }
+    if (this.breakTimer >= 0) {
+      this.breakTimer -= 1 / 60;
+      // The break between periods: the bench and a word from Emilio (GDD §4).
+      if (this.breakTimer < 0) this.showBench('break', pickPhrase(this.deps.data, 'emilio_tiempo_muerto', () => this.rng.next(), this.rival.id, this.rival.name));
+    }
     const due = this.replayDue;
     if (due && this.replay && this.replay.frame >= due.to) {
       this.replayDue = null;
@@ -426,12 +540,21 @@ export class MatchSession implements Session {
       .slice(0, 3)
       .map((c) => `${c.receiver.player.number}:${c.score.toFixed(2)} r${c.risk.toFixed(2)}`)
       .join(' | ');
-    return `${m.phase} · pad ${m.padMode} · balón ${holder}${adv}${sel}${out ? ` · fuera ${out}` : ''}${refLine}${preview ? ` · pase ${preview}` : ''}`;
+    const energy = m
+      .inPlay(0)
+      .map((s) => `${s.player.number}:${Math.round(s.energy * 100)}`)
+      .join(' ');
+    return `${m.phase} · pad ${m.padMode} · balón ${holder}${adv}${sel}${out ? ` · fuera ${out}` : ''}${refLine} · energía ${energy}${preview ? ` · pase ${preview}` : ''}`;
   }
 
   /** Debug layer: the referee whistles something now (if the ball is in play). */
   debugCall(kind: DebugCall): void {
     const m = this.match;
+    if (kind === 'tireOurs' || kind === 'tireRival') {
+      // Energy: everybody in the water down to a fifth (Emilio shouts, the AI changes at the next dead ball).
+      for (const s of m.inPlay(kind === 'tireOurs' ? 0 : 1)) s.energy = Math.min(s.energy, 0.2);
+      return;
+    }
     if (m.phase !== 'transition' && m.phase !== 'positional') return;
     if (kind === 'offensiveFoul') {
       // Whoever has the ball shoves his defender.
@@ -593,7 +716,15 @@ export class MatchSession implements Session {
         sfx.play('click');
         break;
       case 'substitution':
-        this.banner('CAMBIO', event.in.team === 0 ? 'neutral' : 'neutral', `Sale el ${event.out.player.number} · entra ${who(event.in)}`);
+        if (event.chosen) this.changeNotes[event.in.team].push(`sale el ${event.out.player.number}, entra ${who(event.in)}`);
+        else this.banner('CAMBIO', 'neutral', `Sale el ${event.out.player.number} · entra ${who(event.in)}`);
+        break;
+      case 'tired':
+        // Emilio wants him out (GDD §11.3).
+        this.emilio(pickPhrase(this.deps.data, 'emilio_cambio', () => this.rng.next(), this.rival.id, this.rival.name) || '¡CAMBIO!', who(event.who));
+        break;
+      case 'timeout':
+        this.banner('TIEMPO MUERTO', 'neutral', event.side === 0 ? `${m.setup.sides[0].team.code} · quedan ${m.timeouts[0]}` : `${this.rival.code} · se reanuda desde el medio campo`);
         break;
       case 'rotation':
         this.playView.caption(event.shape, 0x7fd3ff, m.ball.pos, 0.9);
@@ -610,6 +741,7 @@ export class MatchSession implements Session {
         const half = event.period === m.setup.periods / 2;
         const last = event.period === m.setup.periods;
         this.banner(last ? '¡FINAL!' : half ? 'DESCANSO' : `FIN DEL ${ORDINAL[event.period]} PERIODO`, 'neutral', `${m.score[0]}–${m.score[1]}`);
+        if (!last && !this.counter && !this.manUp) this.breakTimer = 1.4;
         break;
       }
       case 'phase':
@@ -653,8 +785,15 @@ export class MatchSession implements Session {
           if (this.lastShooterTeam === 1) sfx.crowd('saveUs', 0.4 + difficulty);
           else if (difficulty > 0.35) sfx.crowd('saveThem', 0.5 + difficulty);
         } else if (event.outcome.type === 'post') sfx.crowd('post');
+        else if (event.outcome.type === 'goal' && event.outcome.blunder) {
+          // The Inseguro keeper's howler (GDD §10).
+          this.playView.caption('¡CANTADA!', 0xffd23f, m.ball.pos, 1.4);
+        }
         break;
       }
+      case 'intercept':
+        if (event.by.keeper) this.playView.caption('¡SALIDA!', event.by.team === 0 ? 0x7fd3ff : 0xffd23f, event.by.pos, 1.1);
+        break;
       case 'switch':
       case 'noReceiver':
       case 'noDrive':

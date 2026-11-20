@@ -63,6 +63,8 @@ export interface ViewSource {
   readonly charging: Charging | null;
   /** The swimmer the player controls: ring in the water. */
   readonly controlled: Swimmer | null;
+  /** A match spends energy: a small bar under the player you control (GDD §11.2). */
+  readonly showsEnergy?: boolean;
   /** The goal a team attacks. */
   goalOf(team: TeamSide): Goal;
 }
@@ -88,6 +90,7 @@ export class PlayView {
   private readonly selectRing: Sprite;
   private readonly lines = new Graphics();
   private readonly bar = new Graphics();
+  private readonly energy = new Graphics();
   private readonly aim: Sprite;
   private readonly bounceMark: Sprite;
   private readonly badge = new Container();
@@ -148,7 +151,7 @@ export class PlayView {
     this.actorLayer.addChild(...this.ball.trail, this.ball.ball);
     this.shadowLayer.addChild(this.ball.shadow);
     this.underLayer.addChild(this.aura, this.holderRing, this.selectRing);
-    this.overlay.addChild(this.lines, this.bounceMark, this.aim, this.badge, this.bar);
+    this.overlay.addChild(this.lines, this.bounceMark, this.aim, this.badge, this.bar, this.energy);
     this.view.addChild(
       this.water.view,
       this.pool.floor,
@@ -377,6 +380,7 @@ export class PlayView {
 
     // --- In-water HUD ------------------------------------------------------------------------
     this.drawRings(alpha, scale);
+    this.drawEnergy(alpha, scale);
     this.drawLines(alpha, scale, ballX, ballY);
     this.drawCharge(alpha, scale);
     this.drawLabels(alpha);
@@ -512,6 +516,21 @@ export class PlayView {
       this.placeRing(this.selectRing, selection.swimmer, alpha, scale, 0.66 + 0.06 * Math.sin(this.time * 10));
       this.selectRing.alpha = 1;
     }
+  }
+
+  /** Under the player you control, a small bar with his energy: green, then yellow below half, red when he needs a change. */
+  private drawEnergy(alpha: number, scale: number): void {
+    const g = this.energy.clear();
+    const s = this.drill.controlled;
+    if (!this.drill.showsEnergy || !s || s.keeper) return;
+    const x = this.camera.projectX(lerp(s.prev.x, s.pos.x, alpha));
+    const y = this.camera.projectY(lerp(s.prev.y, s.pos.y, alpha) + 0.95);
+    const w = 46 * scale;
+    const h = 6 * scale;
+    const e = Math.max(0, Math.min(1, s.energy));
+    const color = e < 0.25 ? 0xff5a5a : e < 0.5 ? 0xffd23f : 0x6ee06e;
+    g.roundRect(x - w / 2 - 2 * scale, y - 2 * scale, w + 4 * scale, h + 4 * scale, 4 * scale).fill({ color: 0x0b1a33, alpha: 0.7 });
+    if (e > 0) g.roundRect(x - w / 2, y, w * e, h, 3 * scale).fill(color);
   }
 
   private dashed(g: Graphics, ax: number, ay: number, bx: number, by: number, dash: number, gap: number): void {

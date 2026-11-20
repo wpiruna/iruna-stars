@@ -2,6 +2,7 @@
  * A play session: owns one simulation (penalty shoot-out or shooting lab), feeds it the
  * controller every fixed step and turns its events into picture, sound, vibration and HUD.
  */
+import { capsOf } from './squad';
 import type { Container, Renderer } from 'pixi.js';
 import type { Sfx } from '../audio/sfx';
 import { Rng } from '../core/rng';
@@ -202,12 +203,12 @@ export class PlaySession {
     const kick = this.shootout?.kick;
     if (kick) {
       return {
-        shooter: { color: kick.side === 0 ? 'white' : 'blue', number: kick.shooter.number, leftHanded: kick.shooter.hand === 'left' },
+        shooter: { color: capsOf(this.deps.save.settings.cap)[kick.side], number: kick.shooter.number, leftHanded: kick.shooter.hand === 'left' },
         keeper: { number: kick.keeper.number },
         playerShoots: kick.humanRole === 'shooter',
       };
     }
-    return { shooter: { color: 'white', number: 7, leftHanded: false }, keeper: { number: 1 }, playerShoots: true };
+    return { shooter: { color: this.deps.save.settings.cap, number: 7, leftHanded: false }, keeper: { number: 1 }, playerShoots: true };
   }
 
   private banner(text: string, tone: BannerTone, detail?: string): void {

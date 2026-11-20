@@ -29,6 +29,14 @@ export interface AppActions {
   /** Plays the same mode again from the start. */
   restartPlay(): void;
   setPaused(paused: boolean): void;
+  /** Match: opens the bench menu from the pause. */
+  openBench(): void;
+  /** Closes the bench menu (after a time-out or the break, the match goes on). */
+  closeBench(): void;
+  /** Bench menu: `outId` (in the water) for `inId` (on the bench); null `inId` cancels his change. */
+  benchChange(outId: string, inId: string | null): void;
+  /** Match: our time-out (only with the ball). Opens the bench with Emilio's advice. */
+  callTimeout(): void;
   configureLab(settings: LabSettings): void;
   resetLabStats(): void;
   /** Short confirmation blip for menu buttons. */

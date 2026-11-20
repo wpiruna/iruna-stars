@@ -26,6 +26,8 @@ export interface PassWorld {
   teammates: readonly Swimmer[];
   /** Field defenders who can cut a pass out. */
   defenders: readonly Swimmer[];
+  /** The defending keeper: he comes out for a pass into his area (Salida; GDD §10). */
+  keeper?: Swimmer | null;
   /** The goal being attacked. */
   goal: Goal;
   drives: ReadonlyMap<Swimmer, DriveInfo>;
@@ -82,8 +84,13 @@ const TYPE_KEY: Record<PassType, 'seco' | 'mojado' | 'adelantado' | 'largo'> = {
   long: 'largo',
 };
 
+/** The bar that passes: Pase, or Salida for a keeper (his long pass starts the counter; GDD §10). */
+export function passingBar(passer: Swimmer): number {
+  return passer.keeper ? (passer.player.keeperStats?.rushing ?? passer.player.stats.passing) : passer.player.stats.passing;
+}
+
 export function passSpeed(passer: Swimmer, type: PassType, t: PassTuning): number {
-  return lerp(t.velocidad.min, t.velocidad.max, barFactor(passer.player.stats.passing)) * t.factor[TYPE_KEY[type]];
+  return lerp(t.velocidad.min, t.velocidad.max, barFactor(passingBar(passer))) * t.factor[TYPE_KEY[type]];
 }
 
 function nearestDefender(world: PassWorld, p: Vec2): { defender: Swimmer; distance: number } | null {
@@ -180,10 +187,14 @@ export function passRisk(
   const shares: RiskShare[] = [];
   let keep = 1;
   for (const defender of defenders) {
-    // A defender reading the lane reacts at once and reaches further.
-    const reading = defender.anticipation;
-    const reaction = lerp(d.reaccion.lento, d.reaccion.rapido, barFactor(defender.player.stats.defense)) * (1 - reading) + reactionExtra;
-    const reach = d.alcance + reading * d.alcanceAnticipacion;
+    // A defender reading the lane reacts at once and reaches further. The keeper comes out with
+    // both arms and higher, as quick as his Salida (a Kamikaze further still).
+    const keeper = defender.keeper;
+    const reading = keeper ? 0 : defender.anticipation;
+    const bar = keeper ? (defender.player.keeperStats?.rushing ?? 3) : defender.player.stats.defense;
+    const reaction = lerp(d.reaccion.lento, d.reaccion.rapido, barFactor(bar)) * (1 - reading) + reactionExtra;
+    const reach = keeper ? d.portero.alcance + (defender.player.trait === 'kamikaze' ? d.portero.kamikaze : 0) : d.alcance + reading * d.alcanceAnticipacion;
+    const height = keeper ? d.portero.altura : d.alturaAlcance;
     const front = fronting(receiver.pos, defender.pos, from);
     const fromReceiver = dir(receiver.pos, defender.pos);
     let best = 0;
@@ -192,15 +203,17 @@ export function passRisk(
       const s = i / 10;
       const p = { x: from.x + (to.x - from.x) * s, y: from.y + (to.y - from.y) * s };
       const z = from.z + (endZ - from.z) * s + arc * 4 * s * (1 - s);
-      if (z > d.alturaAlcance) continue;
+      if (z > height) continue;
       // How close to the catch: there the receiver's body is in the way of a defender who does not front.
       const nearCatch = dist(p, to);
       let gap = Math.max(0, dist(defender.pos, p) - reach);
       // A ball on the far side of the receiver means going round their body.
       if (dist(p, receiver.pos) < d.radioEscudo && dot(fromReceiver, dir(receiver.pos, p)) < 0) gap += d.rodeo;
       let r = sigmoid(d.pendiente * (s * total - (reaction + timeToCover(gap, d))));
-      if (nearCatch < d.radioEscudo) r *= lerp(lerp(d.escudoCuerpo, d.disputa, front), 1, nearCatch / d.radioEscudo);
+      // (The keeper plays the ball in the air with both hands: the receiver's body does not shield it.)
+      if (nearCatch < d.radioEscudo && !keeper) r *= lerp(lerp(d.escudoCuerpo, d.disputa, front), 1, nearCatch / d.radioEscudo);
       if (defender.mark === passer) r *= d.factorPropio;
+      if (keeper) r *= d.portero.factor;
       if (r > best) {
         best = r;
         bestS = s;
@@ -223,7 +236,8 @@ export function evaluatePass(world: PassWorld, receiver: Swimmer, t: PassTuning)
   const point = receivePoint(world, receiver, type, speed, t);
   const endZ = type === 'dry' || type === 'long' ? t.alturaRecepcion : 0.05;
   const arc = t.arco[TYPE_KEY[type]];
-  const { total, shares } = passRisk(world.holder, world.from, point, endZ, arc, speed, receiver, world.defenders, t, world.reactionExtra ?? 0);
+  const cutters = world.keeper ? [...world.defenders, world.keeper] : world.defenders;
+  const { total, shares } = passRisk(world.holder, world.from, point, endZ, arc, speed, receiver, cutters, t, world.reactionExtra ?? 0);
   const near = nearestDefender(world, point);
   const free = near ? clamp((near.distance - 0.6) / 1.4, 0, 1) : 1;
   const drive = world.drives.get(receiver);

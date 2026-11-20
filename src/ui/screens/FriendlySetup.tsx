@@ -2,9 +2,9 @@ import { useState } from 'preact/hooks';
 import { STYLE_LABEL } from '../../data/model';
 import { Shield } from '../components/Shield';
 import { useApp } from '../context';
-import { go } from '../state';
+import { go, ui } from '../state';
 
-/** Friendly match: pick the referee (or leave it to chance) and the rival. Cap colour arrives in F5. */
+/** Friendly match: pick the referee (or leave it to chance) and the rival; then the convocatoria and the cap. */
 export function FriendlySetup() {
   const { data, actions } = useApp();
   const [referee, setReferee] = useState<string | null>(null);
@@ -42,7 +42,14 @@ export function FriendlySetup() {
         <h3 class="heading">Rival</h3>
         <div class="rival-grid">
           {rivals.map((team) => (
-            <button class="rival" onClick={() => actions.startMatch(team.id, referee)}>
+            <button
+              class="rival"
+              onClick={() => {
+                actions.click();
+                ui.set({ friendly: { rivalId: team.id, refereeId: referee } });
+                go('squad');
+              }}
+            >
               <Shield id={team.id} code={team.code} image={team.shield} size={3.6} />
               <span class="rival__name">{team.name}</span>
               <span class="rival__info">
@@ -51,10 +58,7 @@ export function FriendlySetup() {
             </button>
           ))}
         </div>
-        <p class="hint">
-          Sin cambios ni energía hasta la Fase 5: juegan los seis mejores de cada equipo, y solo entra un suplente si
-          alguien se queda fuera para todo el partido.
-        </p>
+        <p class="hint">Después eliges la convocatoria y el gorro.</p>
       </div>
     </section>
   );

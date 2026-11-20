@@ -98,11 +98,15 @@ export function shooterProfile(player: Player): ShooterProfile {
 
 export function keeperProfile(player: Player): KeeperProfile {
   // A field player forced into goal keeps poorly, but can still play.
-  return {
+  const profile: KeeperProfile = {
     reflexes: player.keeperStats?.reflexes ?? 3,
     positioning: player.keeperStats?.positioning ?? 3,
+    rushing: player.keeperStats?.rushing ?? 3,
     energy: 1,
   };
+  // Only the keeper traits count in goal (GDD §10).
+  if (player.trait === 'wall' || player.trait === 'kamikaze' || player.trait === 'shaky') profile.trait = player.trait;
+  return profile;
 }
 
 export interface ShootoutSide {

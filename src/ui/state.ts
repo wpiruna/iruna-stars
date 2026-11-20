@@ -12,6 +12,7 @@ export type ScreenName =
   | 'shootoutSetup'
   | 'attackSetup'
   | 'friendlySetup'
+  | 'squad'
   | 'play'
   | 'shootoutResult'
   | 'matchResult';
@@ -40,6 +41,8 @@ export interface UiState {
   canInstall: boolean;
   device: InputDevice;
   debugInfo: DebugInfo;
+  /** The friendly being prepared: rival and referee (null = at random), before the convocatoria. */
+  friendly: { rivalId: string; refereeId: string | null } | null;
 }
 
 export const ui = createStore<UiState>({
@@ -49,6 +52,7 @@ export const ui = createStore<UiState>({
   offlineReady: false,
   canInstall: false,
   device: 'keyboard',
+  friendly: null,
   debugInfo: {
     fps: 0,
     frameMs: 0,

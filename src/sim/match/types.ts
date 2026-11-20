@@ -23,7 +23,7 @@ export type MatchPhase =
 export type SetPieceKind = 'goalThrow' | 'corner' | 'restart' | 'freeThrow';
 
 /** Why a free throw was given: the shot clock ran out, or a foul. */
-export type FreeThrowReason = 'clock' | 'foul';
+export type FreeThrowReason = 'clock' | 'foul' | 'timeout';
 
 export interface SetPiece {
   kind: SetPieceKind;
@@ -112,7 +112,12 @@ export type MatchEvent =
   | { type: 'heldCall'; on: Swimmer }
   | { type: 'advantagePlayed'; on: Swimmer }
   | { type: 'exclusionEnd'; who: Swimmer; reason: ExclusionEnd }
-  | { type: 'substitution'; out: Swimmer; in: Swimmer }
+  /** A substitute comes in: for a player sent off for good, or a change from the bench (`chosen`). */
+  | { type: 'substitution'; out: Swimmer; in: Swimmer; chosen?: boolean }
+  /** A team calls a time-out (it has the ball). */
+  | { type: 'timeout'; side: TeamSide }
+  /** One of the human side's players has just dropped below the warning level of energy. */
+  | { type: 'tired'; who: Swimmer }
   | { type: 'penalty'; shooter: Swimmer; keeper: Swimmer }
   | { type: 'rotation'; shape: '4-2' | '3-3' }
   | { type: 'mustPass'; who: Swimmer };

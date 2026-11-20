@@ -51,6 +51,8 @@ const phaseTime: Partial<Record<MatchPhase, number>> = {};
 const reasons: Record<string, number> = {};
 const shotsBy: Record<string, number> = {};
 const goalsBy: Record<string, number> = {};
+/** Energy (GDD §11.2): changes made from the bench, and how those in the water end each period. */
+const energy = { changes: 0, sum: 0, count: 0, tired: 0, empty: 0 };
 let possessions = 0;
 let passes = 0;
 let missedPasses = 0;
@@ -96,6 +98,7 @@ for (let i = 0; i < matches; i++) {
     current = null;
   };
   while (match.phase !== 'fullTime' && steps < limit) {
+    const before = [match.inPlay(0).map((s) => s.energy), match.inPlay(1).map((s) => s.energy)] as const;
     for (const e of match.step(neutral)) {
       if (e.type === 'pass') {
         passes++;
@@ -110,7 +113,18 @@ for (let i = 0; i < matches; i++) {
         motives[`${e.sanction}:${e.motive}`] = (motives[`${e.sanction}:${e.motive}`] ?? 0) + 1;
         if (e.card === 'yellow') fouls.yellows++;
         if (e.card === 'red' || e.sanction === 'violent') fouls.reds++;
-      } else if (e.type === 'substitution') fouls.subs++;
+      } else if (e.type === 'substitution') {
+        if (e.chosen) energy.changes++;
+        else fouls.subs++;
+      } else if (e.type === 'horn') {
+        // Energy of those in the water as each period ends (before the break gives some back).
+        for (const side of [0, 1] as const) for (const v of before[side]) {
+          energy.sum += v;
+          energy.count++;
+          if (v < 0.5) energy.tired++;
+          if (v < tuning.partido.energia.aviso) energy.empty++;
+        }
+      }
       else if (e.type === 'heldCall') fouls.held++;
       else if (e.type === 'advantagePlayed') fouls.played++;
       else if (e.type === 'penalty') shotPhase = 'penalty';
@@ -190,6 +204,9 @@ console.log('');
 console.log(`Faltas ordinarias por equipo: ${(fouls.fouls / n).toFixed(1)} · exclusiones: ${(fouls.exclusions / n).toFixed(1)} · penaltis: ${(fouls.penalties / n).toFixed(2)}`);
 console.log(`Superioridades por equipo: ${(fouls.manUp / n).toFixed(1)} · goles en superioridad ${(fouls.manUpGoals / n).toFixed(1)} (${((100 * fouls.manUpGoals) / Math.max(1, fouls.manUp)).toFixed(0)} %) · goles de penalti ${((goalsBy.penalty ?? 0) / n).toFixed(2)} de ${((shotsBy.penalty ?? 0) / n).toFixed(2)}`);
 console.log(`Tarjetas por partido: amarillas ${(fouls.yellows / matches).toFixed(2)} · rojas ${(fouls.reds / matches).toFixed(2)} · cambios por expulsión ${(fouls.subs / matches).toFixed(2)} · ventajas: ${fouls.held} esperadas, ${fouls.played} sin pitar por gol`);
+console.log(
+  `Energía al acabar cada periodo: media ${(energy.sum / Math.max(1, energy.count)).toFixed(2)} · por debajo del 50 % ${((100 * energy.tired) / Math.max(1, energy.count)).toFixed(0)} % · del ${Math.round(100 * tuning.partido.energia.aviso)} % ${((100 * energy.empty) / Math.max(1, energy.count)).toFixed(0)} % · cambios desde el banquillo por equipo ${(energy.changes / n).toFixed(1)}`,
+);
 console.log(`Motivos: ${Object.entries(motives).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${(v / matches).toFixed(2)}`).join(' · ')}`);
 console.log('Por árbitro (exclusiones y penaltis por partido; "nos" = equipo 0):');
 for (const r of referees) {

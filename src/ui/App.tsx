@@ -5,6 +5,7 @@ import { DataScreen } from './screens/DataScreen';
 import { Install } from './screens/Install';
 import { Menu } from './screens/Menu';
 import { FriendlySetup } from './screens/FriendlySetup';
+import { SquadSetup } from './screens/SquadSetup';
 import { MatchResult, Play, ShootoutResult } from './screens/Play';
 import { Settings } from './screens/Settings';
 import { ShootoutSetup } from './screens/ShootoutSetup';
@@ -21,6 +22,7 @@ const SCREENS: Record<ScreenName, () => preact.JSX.Element | null> = {
   shootoutSetup: ShootoutSetup,
   attackSetup: AttackSetup,
   friendlySetup: FriendlySetup,
+  squad: SquadSetup,
   play: Play,
   shootoutResult: ShootoutResult,
   matchResult: MatchResult,

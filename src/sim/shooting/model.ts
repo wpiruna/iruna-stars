@@ -5,6 +5,7 @@
  * Goal-plane coordinates: `u` is the lateral offset from the centre of the goal (world y minus
  * goal y, so negative is the post drawn higher on screen) and `v` is the height above the water.
  */
+import type { Trait } from '../../data/model';
 import { barFactor, clamp, lerp } from '../../core/math';
 import type { Rng } from '../../core/rng';
 import type { Goal, Vec2 } from '../field';
@@ -63,6 +64,10 @@ export interface KeeperTuning {
   vaselina: { reaccion: Range; retroceso: Range; profundidad: number };
   errorColocacion: Range;
   blocaje: { velocidadMaxima: number; margenMinimo: number };
+  /** Coming off the line in a one-on-one (Salida): extra reach at full stretch, and how much more a Kamikaze comes. */
+  salida: { alcance: number; distancia: number; kamikaze: number };
+  /** Keeper traits (GDD §10): Muro reaches further; Inseguro lets in one he had saved now and then. */
+  rasgos: { muro: number; inseguro: number };
 }
 
 export interface ShooterProfile {
@@ -76,6 +81,9 @@ export interface KeeperProfile {
   reflexes: number;
   positioning: number;
   energy: number;
+  /** Salida (1–10): one-on-ones, cutting passes out and the long pass. */
+  rushing?: number;
+  trait?: Trait;
 }
 
 export interface ChargeResult {
@@ -269,6 +277,8 @@ export interface KeeperState {
   commit?: { side: AimSide; timing: number };
   /** Extra readiness from watching the shooter wind up (0–1). */
   set?: number;
+  /** Open play: how far he came off his line to a shooter alone in front of him (0 = not at all; more for a Kamikaze). */
+  rushed?: number;
 }
 
 export interface SaveEstimate {
@@ -341,6 +351,9 @@ export function estimateSave(
     reach = mode.alcance + lerp(mode.estirada.min, mode.estirada.max, reflexes) * Math.max(0, plan.flightTime - reaction);
   }
 
+  // Off his line to a lone shooter: the angle closes (open play only).
+  if (context === 'open' && state.rushed) reach += t.salida.alcance * state.rushed;
+  if (keeper.trait === 'wall') reach *= 1 + t.rasgos.muro;
   reach *= tired;
   const margin = reach - need;
   const probability = clamp(1 / (1 + Math.exp(-t.pendiente * margin)), t.limites.min, t.limites.max);
@@ -348,7 +361,8 @@ export function estimateSave(
 }
 
 export type ShotOutcome =
-  | { type: 'goal'; viaPost: boolean }
+  /** `blunder`: an Inseguro keeper let in one he had (GDD §10). */
+  | { type: 'goal'; viaPost: boolean; blunder?: boolean }
   | { type: 'save'; held: boolean }
   | { type: 'post' }
   | { type: 'miss'; where: 'wide' | 'over' };
@@ -375,6 +389,8 @@ export function resolveShot(
   }
   const save = estimateSave(plan, keeper, state, context, keeperTuning);
   if (!rng.chance(save.probability)) return { outcome: { type: 'goal', viaPost: false }, save };
+  // The memorable howler of an Inseguro keeper.
+  if (keeper.trait === 'shaky' && rng.chance(keeperTuning.rasgos.inseguro)) return { outcome: { type: 'goal', viaPost: false, blunder: true }, save };
   // Slow shots straight at the keeper are held; hard or stretched ones are pushed away.
   const held =
     plan.arrivalSpeed <= keeperTuning.blocaje.velocidadMaxima && save.margin >= keeperTuning.blocaje.margenMinimo
