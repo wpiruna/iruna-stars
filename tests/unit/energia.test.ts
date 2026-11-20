@@ -113,6 +113,25 @@ describe('banquillo y cambios (GDD §11.3)', () => {
     expect(match.inPlay(1).some((d) => d.mark === out)).toBe(false);
   });
 
+  it('el que sale recupera en el banquillo y puede volver a entrar (sin límite de cambios)', () => {
+    const match = makeMatch({ seed: 'vuelve', human: true });
+    until(match, 'swimOffWon', 20);
+    const tired = match.inPlay(0)[3]!;
+    const sub = match.benchOf(0)[0]!;
+    tired.energy = 0.2;
+    match.requestChange(0, tired, sub);
+    match.forceCall(match.inPlay(1)[0]!, match.inPlay(0)[0]!, 'ordinary', 'FALTA');
+    expect(match.benchOf(0)).toContain(tired);
+    // Thirty seconds on the bench.
+    for (let i = 0; i < 60 * 30; i++) match.step(NEUTRAL);
+    expect(tired.energy).toBeGreaterThan(0.6);
+    // And back into the water for the one who replaced him.
+    expect(match.requestChange(0, sub, tired)).toBe(true);
+    match.forceCall(match.inPlay(1)[0]!, match.inPlay(0)[0]!, 'ordinary', 'FALTA');
+    expect(match.inPlay(0)).toContain(tired);
+    expect(match.benchOf(0)).toContain(sub);
+  });
+
   it('pedir otro cambio para el mismo sustituye al anterior; se puede anular', () => {
     const match = makeMatch({ seed: 'cambio2', human: true });
     until(match, 'swimOffWon', 20);

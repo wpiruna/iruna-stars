@@ -689,7 +689,7 @@
     "energia": {
       "_nota": "Energía (GDD §11.2), de 0 a 1, en segundos reales. Nadar por encima de 'esfuerzo.desde' de su velocidad máxima gasta 'gasto.nado' por segundo a tope (elevado a 'curva'); acelerón, entrada, lucha, tiro y contacto suman lo suyo. Si no se esfuerza, recupera 'recuperacion.agua' por segundo; en el banquillo 'banquillo'; al acabar un periodo 'descanso' y en un tiempo muerto 'tiempoMuerto' de golpe. La Resistencia multiplica el gasto (de 'gasto.max' con 1 a 'gasto.min' con 10) y la recuperación; el rasgo Diésel multiplica el gasto por 'diesel'. Por debajo de 'umbral' nada más lento (hasta 'efecto.velocidad' menos con la barra vacía) y pierde puntos de Habilidad ('efecto.habilidad'); el tiro pierde fuerza y precisión en el modelo de tiro.",
       "esfuerzo": { "desde": 0.45, "max": 1.4 },
-      "gasto": { "nado": 0.0036, "curva": 1.2, "aceleron": 0.035, "entrada": 0.007, "lucha": 0.007, "tiro": 0.011, "contacto": 0.007 },
+      "gasto": { "nado": 0.0055, "curva": 1.2, "aceleron": 0.05, "entrada": 0.01, "lucha": 0.01, "tiro": 0.016, "contacto": 0.01 },
       "recuperacion": { "agua": 0.0015, "banquillo": 0.016, "descanso": 0.2, "tiempoMuerto": 0.1 },
       "resistencia": { "gasto": { "min": 0.6, "max": 1.5 }, "recuperacion": { "min": 0.7, "max": 1.35 } },
       "diesel": 0.8,

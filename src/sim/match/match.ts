@@ -913,6 +913,9 @@ export class Match {
       for (const ex of [...side.out]) if (!ex.brutal) this.bringBack(side, ex, 'time', events, true);
       side.rotated = false;
     }
+    // The break between periods gives everybody some breath back (GDD §11.2), once it is over: in
+    // the break the bench shows how tired they really are.
+    if (!this.lab && this.period > 1) for (const side of this.sides) for (const s of [...side.field, ...side.bench]) rest(s, this.m.energia.recuperacion.descanso, this.m.energia);
     this.makeChanges(events);
     this.resetPlayState();
     this.possession = null;
@@ -1120,8 +1123,6 @@ export class Match {
     this.ball.dead = true;
     for (const k of this.keepers) k.holding = false;
     this.phaseTimer = this.period === this.setup.periods / 2 ? this.m.periodo.mitad : this.m.periodo.descanso;
-    // The break between periods gives everybody some breath back (GDD §11.2).
-    if (!this.lab) for (const side of this.sides) for (const s of [...side.field, ...side.bench]) rest(s, this.m.energia.recuperacion.descanso, this.m.energia);
     events.push({ type: 'horn' }, { type: 'periodEnd', period: this.period });
     this.setPhase('periodEnd', events);
   }

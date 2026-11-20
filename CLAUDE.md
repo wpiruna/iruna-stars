@@ -161,7 +161,7 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador; components/Benc
   punto con tope de 0,25. Hay tests de Monte Carlo (`tests/unit/arbitro.test.ts`): no romper esas bandas.
 - Equilibrio (`npm run sim`, 2 periodos de 6 min, con energía y cambios de la IA): ~3,5 goles por equipo, ~2,5
   exclusiones por equipo, ~0,4 penaltis, superioridad ~31–35 % de gol, ~1,5 contras con superioridad, ~78 % de posesiones
-  al estático con ~25 s de posesión, ~1,7 cambios desde el banquillo por equipo. `npm run sim` también da la energía.
+  al estático con ~25 s de posesión, ~4–6 cambios desde el banquillo por equipo. `npm run sim` también da la energía.
 - Vuelta rápida (pedida por Julián): sin superioridad (contada en toda la piscina) ni nadie solo ante el portero, el
   ataque se asienta en cuanto el balón cruza el medio campo (`transicion.margenMedio`) o a `segundosSinVentaja` de
   cambiar de manos. En posicional, quien está lejos de su puesto nada a ritmo de contra; el que lleva el balón nada
@@ -204,8 +204,11 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador; components/Benc
   conservan el rótulo central.
 - Energía (F5, `partido.energia`, `src/sim/match/energy.ts`): en segundos reales; gasta al nadar por encima del 45 % de su
   velocidad máxima, en acelerones, entradas, lucha, tiro y contacto; recupera flotando, mucho en el banquillo, de golpe
-  en el descanso y en el tiempo muerto. Calibrada sin cambios: Resistencia 1 → ~37 % al acabar el 1.er periodo y casi
-  vacío al final; 5 → ~56 % y ~38 %; 10 → >75 % todo el partido. Por debajo de la mitad: hasta −35 % de velocidad, tiro
+  en el tiempo muerto y al empezar el periodo siguiente (en el descanso el banquillo enseña la energía real). Julián: un 5
+  de Resistencia aguanta como mucho un periodo y llega al descanso con un 30 %. Calibrada sin cambios: Resistencia 1 →
+  baja del 25 % antes del descanso; 5 → ~32 % al descanso y ~14 % al final; 10 → >60 % todo el partido. Rotaciones
+  (Julián): el que sale recupera en el banquillo (del 30 % a ~90 % en ~40 s reales) y puede volver a entrar sin límite;
+  la IA hace ~6 cambios por partido y en ~4 vuelve a entrar uno ya descansado. Hay test. Por debajo de la mitad: hasta −35 % de velocidad, tiro
   más flojo y desviado (modelo de tiro) y −2,5 puntos de Habilidad. Los laboratorios no gastan. Tests en
   `tests/unit/energia.test.ts`.
 - Cambios (F5): los pedidos desde Pausa → Banquillo entran en el **siguiente balón parado** (falta, saque, gol, periodo,
