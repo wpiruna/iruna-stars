@@ -501,65 +501,79 @@ export function MatchResult() {
   const stats = match.stats;
   const total = stats ? stats[0].possession + stats[1].possession : 0;
   return (
-    <section class={`screen result result--${result.draw ? 'draw' : result.won ? 'won' : 'lost'}`}>
-      <h2 class="result__title">{title}</h2>
-      <div class="result__score">
-        <div>
-          <Shield id={match.ours.id} code={match.ours.code} image={match.ours.shield} size={5} />
-          <span>{match.ours.name}</span>
+    <section class={`screen result result--match result--${result.draw ? 'draw' : result.won ? 'won' : 'lost'}`}>
+      {/* Two columns so it all fits on a landscape screen: the result on the left, the statistics on the right. */}
+      <div class="result__main">
+        <h2 class="result__title">{title}</h2>
+        <div class="result__score">
+          <div>
+            <Shield id={match.ours.id} code={match.ours.code} image={match.ours.shield} size={4.4} />
+            <span>{match.ours.name}</span>
+          </div>
+          <strong>
+            {result.score[0]} – {result.score[1]}
+          </strong>
+          <div>
+            <Shield id={match.rival.id} code={match.rival.code} image={match.rival.shield} size={4.4} />
+            <span>{match.rival.name}</span>
+          </div>
         </div>
-        <strong>
-          {result.score[0]} – {result.score[1]}
-        </strong>
-        <div>
-          <Shield id={match.rival.id} code={match.rival.code} image={match.rival.shield} size={5} />
-          <span>{match.rival.name}</span>
+        {result.phrase !== '' && <p class="result__phrase">«{result.phrase}»</p>}
+        <div class="result__actions">
+          <button class="btn" onClick={actions.restartPlay}>
+            Revancha
+          </button>
+          <button class="btn" onClick={actions.exitPlay}>
+            Menú
+          </button>
         </div>
       </div>
-      {stats && (
-        <table class="match-stats">
-          <tbody>
-            {STAT_ROWS.map(([key, label]) => (
-              <tr>
-                <td>{stats[0][key]}</td>
-                <th>{label}</th>
-                <td>{stats[1][key]}</td>
-              </tr>
-            ))}
-            <tr>
-              <td>
-                {stats[0].manUpGoals}/{stats[0].manUp}
-              </td>
-              <th>Goles en superioridad</th>
-              <td>
-                {stats[1].manUpGoals}/{stats[1].manUp}
-              </td>
-            </tr>
-            {stats[0].yellows + stats[1].yellows + stats[0].reds + stats[1].reds > 0 && (
-              <tr>
-                <td>{cards(stats[0])}</td>
-                <th>Tarjetas</th>
-                <td>{cards(stats[1])}</td>
-              </tr>
-            )}
-            <tr>
-              <td>{total > 0 ? Math.round((100 * stats[0].possession) / total) : 50} %</td>
-              <th>Posesión</th>
-              <td>{total > 0 ? Math.round((100 * stats[1].possession) / total) : 50} %</td>
-            </tr>
-          </tbody>
-        </table>
+      {(stats || match.referee !== '') && (
+        <div class="result__side">
+          {stats && (
+            <table class="match-stats">
+              <thead>
+                <tr>
+                  <td>{match.ours.code}</td>
+                  <th />
+                  <td>{match.rival.code}</td>
+                </tr>
+              </thead>
+              <tbody>
+                {STAT_ROWS.map(([key, label]) => (
+                  <tr>
+                    <td>{stats[0][key]}</td>
+                    <th>{label}</th>
+                    <td>{stats[1][key]}</td>
+                  </tr>
+                ))}
+                <tr>
+                  <td>
+                    {stats[0].manUpGoals}/{stats[0].manUp}
+                  </td>
+                  <th>Goles en superioridad</th>
+                  <td>
+                    {stats[1].manUpGoals}/{stats[1].manUp}
+                  </td>
+                </tr>
+                {stats[0].yellows + stats[1].yellows + stats[0].reds + stats[1].reds > 0 && (
+                  <tr>
+                    <td>{cards(stats[0])}</td>
+                    <th>Tarjetas</th>
+                    <td>{cards(stats[1])}</td>
+                  </tr>
+                )}
+                <tr>
+                  <td>{total > 0 ? Math.round((100 * stats[0].possession) / total) : 50} %</td>
+                  <th>Posesión</th>
+                  <td>{total > 0 ? Math.round((100 * stats[1].possession) / total) : 50} %</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
+          {match.referee !== '' && <p class="result__referee">Árbitro: {match.referee}</p>}
+        </div>
       )}
-      {match.referee !== '' && <p class="result__referee">Árbitro: {match.referee}</p>}
-      {result.phrase !== '' && <p class="result__phrase">«{result.phrase}»</p>}
-      <div class="result__actions">
-        <button class="btn" onClick={actions.restartPlay}>
-          Revancha
-        </button>
-        <button class="btn" onClick={actions.exitPlay}>
-          Menú
-        </button>
-      </div>
     </section>
   );
 }
