@@ -173,9 +173,44 @@ function GoalHeadline() {
   );
 }
 
+/**
+ * The changes board (Julián): at a stoppage, every change made, one by one — "sale este, entra
+ * este" — with the number of the cap, ours first and then the rival's.
+ */
+function ChangesBoard() {
+  const { changes, bench } = useStore(hud);
+  if (!changes || bench) return null;
+  const total = changes.groups.reduce((n, g) => n + g.rows.length, 0);
+  return (
+    <div class={`changes${changes.leaving ? ' changes--leaving' : ''}`} key={changes.id}>
+      <strong class="changes__title">{total === 1 ? 'CAMBIO' : 'CAMBIOS'}</strong>
+      {changes.groups.map((g) => (
+        <section class={`changes__group changes__group--${g.ours ? 'ours' : 'theirs'}`}>
+          <span class="changes__team">{g.code}</span>
+          {g.rows.map((r) => (
+            <div class="changes__pair">
+              <span class="changes__line changes__line--out">
+                <em>▼ SALE</em>
+                <span class={`cap cap--${g.cap}`}>{r.out.number}</span>
+                <b>{r.out.nickname}</b>
+                {r.note && <i>{r.note}</i>}
+              </span>
+              <span class="changes__line changes__line--in">
+                <em>▲ ENTRA</em>
+                <span class={`cap cap--${g.cap}`}>{r.in.number}</span>
+                <b>{r.in.nickname}</b>
+              </span>
+            </div>
+          ))}
+        </section>
+      ))}
+    </div>
+  );
+}
+
 /** Television scoreboard and what the pad does right now (GDD §4 and §16). */
 function MatchHud() {
-  const { match, device, replay, goal } = useStore(hud);
+  const { match, device, replay, goal, changes } = useStore(hud);
   if (!match) return null;
   if (replay) {
     return (
@@ -216,6 +251,11 @@ function MatchHud() {
         </div>
       )}
       {label && match.padMode !== 'none' && <div class={`pad-mode pad-mode--${match.padMode}`}>{label}</div>}
+      {match.pendingChanges > 0 && !changes && (
+        <div class="changes-pending">
+          ⇄ {match.pendingChanges === 1 ? '1 cambio' : `${match.pendingChanges} cambios`} <span>en la próxima parada</span>
+        </div>
+      )}
     </>
   );
 }
@@ -388,6 +428,7 @@ export function Play() {
       <AttackHud />
       <MatchHud />
       <GoalHeadline />
+      <ChangesBoard />
       <Banner />
       <TurnCard />
       <LabPanel />

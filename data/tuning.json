@@ -705,7 +705,13 @@
       "_nota": "Cambios de la IA (GDD §11.3) en cada balón parado: saca a los que bajan de 'cansado' (los más cansados primero, como mucho 'porParada') por suplentes con al menos 'descansado', del mismo puesto si puede.",
       "cansado": 0.35,
       "descansado": 0.7,
-      "porParada": 2
+      "porParada": 2,
+      "rotulo": {
+        "_nota": "Rótulo de CAMBIOS (Julián): segundos en pantalla, 'base' más 'porCambio' por cada cambio, como mucho 'maximo'.",
+        "base": 3,
+        "porCambio": 1.1,
+        "maximo": 8
+      }
     }
   },
   "arbitro": {

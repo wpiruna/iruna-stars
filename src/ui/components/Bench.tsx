@@ -80,7 +80,9 @@ export function BenchPanel() {
     ? 'Ahora toca al suplente que entra.'
     : bench.bench.length === 0
       ? 'No quedan suplentes en el banquillo.'
-      : `Toca al que sale y luego al que entra. ${now ? 'Los cambios entran al reanudar.' : 'El cambio se hace en el próximo balón parado.'}`;
+      : `Toca al que sale y luego al que entra. ${
+          now || bench.deadBall ? 'Los cambios entran al volver al juego.' : 'Entran en la próxima parada del juego: una falta, un gol, un fuera…'
+        }`;
   return (
     <div class="bench">
       <div class="bench__box">

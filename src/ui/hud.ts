@@ -74,6 +74,31 @@ export interface HudMatch {
   referee: string;
   /** Filled in at the final whistle. */
   stats: [HudMatchStats, HudMatchStats] | null;
+  /** Changes of ours asked for in the bench and waiting for the next stoppage. */
+  pendingChanges: number;
+}
+
+/** A player on the changes board: the number on his cap and his nickname. */
+export interface HudChangePlayer {
+  number: number;
+  nickname: string;
+}
+
+/**
+ * The changes board (Julián): at a stoppage, every change made, one by one ("sale este, entra
+ * este"), ours first and then the rival's.
+ */
+export interface HudChanges {
+  /** Changes with every board so the animation starts again. */
+  id: number;
+  groups: {
+    ours: boolean;
+    code: string;
+    cap: 'white' | 'blue';
+    rows: { out: HudChangePlayer; in: HudChangePlayer; note?: string }[];
+  }[];
+  /** Going away: the exit animation is playing. */
+  leaving: boolean;
 }
 
 /** The headline of a goal in a match (GDD §16, "rótulo de gol"): who scored and the new score. */
@@ -114,6 +139,8 @@ export interface HudBench {
   changes: { out: string; in: string }[];
   /** Emilio's line (time-out and break). */
   tip: string;
+  /** The ball is dead right now: the changes come in as soon as the game goes on. */
+  deadBall: boolean;
 }
 
 /** Emilio shouting from the bench: a speech bubble with his photo (GDD §11.3). */
@@ -155,6 +182,8 @@ export interface HudState {
   /** Time-outs we have left and whether one can be called now (we have the ball). */
   timeouts: { left: number; now: boolean } | null;
   emilio: HudEmilio | null;
+  /** The changes board after a stoppage. */
+  changes: HudChanges | null;
 }
 
 export const emptyHud = (): HudState => ({
@@ -179,6 +208,7 @@ export const emptyHud = (): HudState => ({
   bench: null,
   timeouts: null,
   emilio: null,
+  changes: null,
 });
 
 export const hud = createStore<HudState>(emptyHud());

@@ -193,9 +193,11 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador; components/Benc
   al entrenamiento y a la tanda); un tiro que no es gol acaba fuera. Hay un test con partidos reales.
 - Ambiente pedido por Julián: agua y público de fondo «sin ser molesto» (Ajustes → Ambiente: normal, bajo, sin). Niveles
   medidos con un render sin altavoces (OfflineAudioContext en Chrome sin pantalla, RMS): fondo en ataque estático
-  ≈ −44 dBFS, −36 en una contra, efectos ≈ −32, silbato ≈ −26 (pico −23), pitido de gol ≈ −25, gol nuestro con pitido
-  ≈ −25 y luego aplauso ≈ −31…−34 durante unos 5 s. Si se toca, que el fondo quede siempre por debajo de los efectos.
-  El entrenamiento no tiene público.
+  ≈ −44 dBFS, −36 en una contra, efectos ≈ −32, silbato ≈ −26 (pico −23), pitido de gol ≈ −25. Si se toca, que el fondo quede siempre por debajo de los
+  efectos. Excepción pedida por Julián: la **ovación** de un gol nuestro (`Sfx.ovation`: sube el murmullo de toda la
+  grada unos 3 s, gritos de «¡gol!» con voces sintetizadas, silbidos y aplauso largo) va a ≈ −21 los dos primeros
+  segundos y ≈ −25…−30 durante la repetición; gol rival: lamento y su afición al fondo (≈ −32). El entrenamiento no
+  tiene público.
 - Agua según cuánto se nada (Julián): `swimActivity` es la media de velocidades al cuadrado sobre 1,9² (≈ 1 en la contra,
   < 0,15 en el estático asentado; hay un test con partidos reales); `Sfx` la suaviza (sube en 0,3 s, baja en 1,1 s).
 - Gol en partido (Julián): pitido largo del árbitro 0,3 s después y rótulo arriba (`hud.goal`, `GoalHeadline` en
@@ -211,8 +213,12 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador; components/Benc
   la IA hace ~6 cambios por partido y en ~4 vuelve a entrar uno ya descansado. Hay test. Por debajo de la mitad: hasta −35 % de velocidad, tiro
   más flojo y desviado (modelo de tiro) y −2,5 puntos de Habilidad. Los laboratorios no gastan. Tests en
   `tests/unit/energia.test.ts`.
-- Cambios (F5): los pedidos desde Pausa → Banquillo entran en el **siguiente balón parado** (falta, saque, gol, periodo,
-  tiempo muerto) en el sitio del que sale (arcade: sin nadar a la zona de reentrada); sin límite de cambios. La IA cambia
+- Cambios (F5): los pedidos desde Pausa → Banquillo entran en la **siguiente parada** (Julián: falta, saque, fuera, gol,
+  penalti, periodo, tiempo muerto) en el sitio del que sale (arcade: sin nadar a la zona de reentrada); sin límite de
+  cambios. Si el balón ya está parado al cerrar el banquillo (libre sin sacar, salida antes del sprint: `Match.deadBall`)
+  entran en ese momento; si el que sale está excluido, el cambio espera a la siguiente parada. Mientras esperan, aviso
+  «⇄ N cambios en la próxima parada»; al hacerse, rótulo **CAMBIOS** a la derecha con «▼ SALE / ▲ ENTRA» por cada uno,
+  los nuestros y los del rival (`partido.cambios.rotulo`), aparte del rótulo central para no tapar la falta. La IA cambia
   sola a los que bajan de 0,35 (`partido.cambios`); nuestros solo si Julián lo pide. Emilio grita «¡CAMBIO!» (bocadillo
   con su foto) cuando uno de los nuestros baja del 25 %. Solo jugadores de campo: el portero no se cambia.
 - Tiempos muertos (F5): 2 por equipo (`reglas.json`), solo con el balón (WP); reanuda con un libre desde el medio campo

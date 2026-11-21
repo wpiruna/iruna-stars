@@ -21,7 +21,7 @@ import { fieldFromRules } from '../sim/field';
 import { Match } from '../sim/match/match';
 import type { Swimmer } from '../sim/attack/types';
 import type { MatchEvent } from '../sim/match/types';
-import { emptyHud, hud, type BannerTone, type HudBench, type HudBenchPlayer } from '../ui/hud';
+import { emptyHud, hud, type BannerTone, type HudBench, type HudBenchPlayer, type HudChanges } from '../ui/hud';
 import { swimActivity } from './ambience';
 import { GoalReplay } from './replay';
 import { capsOf, resolveSquad } from './squad';
@@ -94,8 +94,12 @@ export class MatchSession implements Session {
   /** Emilio's speech bubble: seconds it stays up. */
   private emilioId = 0;
   private emilioTimer = -1;
-  /** Changes made this step, for a single caption. */
-  private readonly changeNotes: [string[], string[]] = [[], []];
+  /** Changes made this step (ours and theirs), for a single board; and how long it stays up. */
+  private readonly changeRows: [HudChanges['groups'][number]['rows'], HudChanges['groups'][number]['rows']] = [[], []];
+  private changesId = 0;
+  private changesTimer = -1;
+  /** Cap colours: ours and the rival's. */
+  private readonly caps: Record<0 | 1, 'white' | 'blue'>;
 
   constructor(
     private readonly deps: MatchDeps,
@@ -156,6 +160,7 @@ export class MatchSession implements Session {
       ...(counter ? { counter } : {}),
       ...(this.manUp ? { manUp: this.manUp } : {}),
     });
+    this.caps = capsOf(save.settings.cap);
     this.playView = new PlayView(
       deps.renderer,
       field,
@@ -175,7 +180,7 @@ export class MatchSession implements Session {
         },
       },
       (camera, snap) => this.direct(camera, snap),
-      capsOf(save.settings.cap),
+      this.caps,
     );
     this.view = this.playView.view;
     // Water always; a crowd only for real matches (the labs are training).
@@ -198,6 +203,7 @@ export class MatchSession implements Session {
         manUp: null,
         referee: referee?.name ?? '',
         stats: null,
+        pendingChanges: 0,
       },
     });
     if (this.manUp) {
@@ -344,6 +350,7 @@ export class MatchSession implements Session {
         bench: [...m.benchOf(0)].sort((a, b) => a.player.number - b.player.number).map(card),
         changes: m.changesOf(0).map((c) => ({ out: c.out.id, in: c.in.id })),
         tip: this.benchTip,
+        deadBall: m.deadBall,
       },
     });
   }
@@ -354,12 +361,13 @@ export class MatchSession implements Session {
     if (!reason) return;
     this.benchReason = null;
     hud.set({ bench: null });
-    if (reason === 'timeout') {
-      const events: MatchEvent[] = [];
-      this.match.callTimeout(0, events);
-      for (const event of events) this.handle(event);
-      this.flushChangeNotes();
-    }
+    const events: MatchEvent[] = [];
+    if (reason === 'timeout') this.match.callTimeout(0, events);
+    // From the pause with the ball already dead (a throw waiting, the line-up for the sprint):
+    // this stoppage is the next one, so the changes come in now.
+    else if (reason === 'pause') this.match.changesNow(events);
+    for (const event of events) this.handle(event);
+    this.flushChanges();
     if (reason !== 'pause') this.setPaused(false);
   }
 
@@ -389,13 +397,34 @@ export class MatchSession implements Session {
     this.emilioTimer = 4.5;
   }
 
-  /** One caption for the changes made at a dead ball (ours and theirs). */
-  private flushChangeNotes(): void {
-    const [ours, theirs] = this.changeNotes;
-    if (ours.length > 0) this.banner('CAMBIO', 'neutral', ours.join(' · '));
-    else if (theirs.length > 0) this.banner(`CAMBIO ${this.rival.code}`, 'neutral', theirs.join(' · '));
+  /**
+   * The changes board (Julián): every change made at this stoppage, "sale este, entra este",
+   * ours first. It stays up long enough to read them all, and never covers the referee's caption.
+   */
+  private flushChanges(): void {
+    const [ours, theirs] = this.changeRows;
+    if (ours.length + theirs.length === 0) return;
+    const m = this.match;
+    const groups: HudChanges['groups'] = [];
+    if (ours.length > 0) groups.push({ ours: true, code: m.setup.sides[0].team.code, cap: this.caps[0], rows: [...ours] });
+    if (theirs.length > 0) groups.push({ ours: false, code: this.rival.code, cap: this.caps[1], rows: [...theirs] });
     ours.length = 0;
     theirs.length = 0;
+    const rows = groups.reduce((n, g) => n + g.rows.length, 0);
+    const c = m.setup.match.cambios.rotulo;
+    hud.set({ changes: { id: ++this.changesId, groups, leaving: false } });
+    this.changesTimer = Math.min(c.maximo, c.base + c.porCambio * rows);
+  }
+
+  private stepChanges(): void {
+    if (this.changesTimer < 0) return;
+    this.changesTimer -= 1 / 60;
+    if (this.changesTimer >= 0) return;
+    const board = hud.get().changes;
+    if (board && !board.leaving) {
+      hud.set({ changes: { ...board, leaving: true } });
+      this.changesTimer = 0.4;
+    } else hud.set({ changes: null });
   }
 
   step(): void {
@@ -423,7 +452,8 @@ export class MatchSession implements Session {
     const events = this.match.step({ x: input.x, y: input.y, touching: input.touching, shot: input.shot, skill: input.skill });
     this.replay?.record(events);
     for (const event of events) this.handle(event);
-    this.flushChangeNotes();
+    this.flushChanges();
+    this.stepChanges();
     if (this.emilioTimer >= 0) {
       this.emilioTimer -= 1 / 60;
       if (this.emilioTimer < 0) hud.set({ emilio: null });
@@ -631,7 +661,8 @@ export class MatchSession implements Session {
     const state = hud.get().match;
     if (!state) return;
     const manUp = this.manUpState();
-    const snapshot = `${m.score.join('-')}|${m.period}|${Math.ceil(m.clock)}|${Math.ceil(m.shotClock)}|${m.possession}|${m.padMode}|${m.phase}|${JSON.stringify(manUp)}`;
+    const pendingChanges = m.changesOf(0).length;
+    const snapshot = `${m.score.join('-')}|${m.period}|${Math.ceil(m.clock)}|${Math.ceil(m.shotClock)}|${m.possession}|${m.padMode}|${m.phase}|${JSON.stringify(manUp)}|${pendingChanges}`;
     if (snapshot === this.lastSnapshot) return;
     this.lastSnapshot = snapshot;
     hud.set({
@@ -645,6 +676,7 @@ export class MatchSession implements Session {
         padMode: m.padMode,
         phase: m.phase,
         manUp,
+        pendingChanges,
       },
     });
   }
@@ -715,10 +747,12 @@ export class MatchSession implements Session {
         this.playView.caption(event.reason === 'time' ? '¡VUELVE!' : event.reason === 'goal' ? 'VUELVE TRAS EL GOL' : '¡VUELVE!', 0x7fd3ff, event.who.pos, 1.2);
         sfx.play('click');
         break;
-      case 'substitution':
-        if (event.chosen) this.changeNotes[event.in.team].push(`sale el ${event.out.player.number}, entra ${who(event.in)}`);
-        else this.banner('CAMBIO', 'neutral', `Sale el ${event.out.player.number} · entra ${who(event.in)}`);
+      case 'substitution': {
+        // On the board at the end of the step, all together (an expelled player's substitute too).
+        const card = (s: Swimmer) => ({ number: s.player.number, nickname: s.player.nickname });
+        this.changeRows[event.in.team].push({ out: card(event.out), in: card(event.in), ...(event.chosen ? {} : { note: 'expulsado' }) });
         break;
+      }
       case 'tired':
         // Emilio wants him out (GDD §11.3).
         this.emilio(pickPhrase(this.deps.data, 'emilio_cambio', () => this.rng.next(), this.rival.id, this.rival.name) || '¡CAMBIO!', who(event.who));

@@ -1855,6 +1855,139 @@ kbd {
   }
 }
 
+/* The changes board (Julián): at a stoppage, who goes off and who comes in, one by one. */
+.changes {
+  position: absolute;
+  top: calc(5.2rem + var(--safe-t));
+  right: calc(1rem + var(--safe-r));
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 17rem;
+  max-width: 26rem;
+  padding: 0.5rem 0.8rem 0.6rem;
+  color: var(--white);
+  background: linear-gradient(100deg, rgb(4 17 42 / 0.94) 0%, rgb(11 42 92 / 0.94) 100%);
+  border-right: 0.3rem solid var(--yellow);
+  border-radius: 0.6rem;
+  box-shadow: 0 0.3rem 0 rgb(4 17 42 / 0.6);
+  pointer-events: none;
+  animation: changes-in 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.changes--leaving {
+  animation: changes-out 0.35s ease-in both;
+}
+.changes__title {
+  font-family: var(--display);
+  font-size: 1.7rem;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--yellow);
+  transform: skewX(-7deg);
+}
+.changes__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.changes__team {
+  align-self: flex-start;
+  padding: 0 0.5rem;
+  font-family: var(--display);
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  background: var(--cyan);
+  border-radius: 0.25rem;
+}
+.changes__group--theirs .changes__team {
+  background: #ffb0b0;
+}
+.changes__pair {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.3rem 0;
+  border-top: 0.08rem solid rgb(255 255 255 / 0.14);
+}
+.changes__team + .changes__pair {
+  border-top: 0;
+}
+.changes__line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+.changes__line em {
+  flex: none;
+  width: 4.8rem;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+}
+.changes__line--out em {
+  color: #ff8b8b;
+}
+.changes__line--in em {
+  color: #6ee06e;
+}
+.changes__line .cap {
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  font-size: 1.05rem;
+}
+.changes__line b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.changes__line--out b {
+  opacity: 0.75;
+}
+.changes__line i {
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-style: normal;
+  color: #ff8b8b;
+  text-transform: uppercase;
+}
+@keyframes changes-in {
+  0% {
+    opacity: 0;
+    transform: translateX(120%);
+  }
+}
+@keyframes changes-out {
+  100% {
+    opacity: 0;
+    transform: translateX(120%);
+  }
+}
+/* Changes asked for in the bench, waiting for the next stoppage. */
+.changes-pending {
+  position: absolute;
+  top: calc(4.6rem + var(--safe-t));
+  right: calc(1rem + var(--safe-r));
+  padding: 0.2rem 0.7rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: var(--yellow);
+  border-radius: 0.35rem;
+  box-shadow: 0 0.2rem 0 rgb(4 17 42 / 0.5);
+  pointer-events: none;
+}
+.changes-pending span {
+  font-weight: 600;
+}
+
 /* ------------------------------------------------------------ full match */
 .scoreboard--match {
   overflow: visible;
@@ -2652,6 +2785,12 @@ kbd {
     animation: goal-fade 0.3s both;
   }
   .goal-head--leaving {
+    animation: goal-fade 0.3s reverse both;
+  }
+  .changes {
+    animation: goal-fade 0.3s both;
+  }
+  .changes--leaving {
     animation: goal-fade 0.3s reverse both;
   }
 }

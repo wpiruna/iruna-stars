@@ -113,6 +113,63 @@ describe('banquillo y cambios (GDD §11.3)', () => {
     expect(match.inPlay(1).some((d) => d.mark === out)).toBe(false);
   });
 
+  it('con el balón ya parado (un libre esperando el silbato) el cambio entra al volver al juego; con el balón en juego, espera', () => {
+    const match = makeMatch({ seed: 'parado', human: true });
+    until(match, 'swimOffWon', 20);
+    const [first, second] = match.inPlay(0);
+    const [x, y] = match.benchOf(0);
+    // In play: it waits.
+    match.requestChange(0, first!, x!);
+    expect(match.deadBall).toBe(false);
+    expect(match.changesNow([])).toBe(false);
+    expect(match.inPlay(0)).toContain(first);
+    // A free throw for us: the change asked for before comes in with the whistle.
+    match.forceCall(match.inPlay(1)[0]!, second!, 'ordinary', 'FALTA');
+    expect(match.inPlay(0)).toContain(x);
+    expect(match.phase).toBe('setPiece');
+    expect(match.deadBall).toBe(true);
+    // Asked for now, with the throw still to be taken (the taker himself): in at once.
+    const taker = match.setPiece!.taker;
+    expect(match.requestChange(0, taker, y!)).toBe(true);
+    const events: MatchEvent[] = [];
+    expect(match.changesNow(events)).toBe(true);
+    expect(events).toContainEqual(expect.objectContaining({ type: 'substitution', out: taker, in: y, chosen: true }));
+    expect(match.setPiece!.taker).toBe(y);
+    expect(match.ball.holder).toBe(y);
+    expect(match.changesOf(0)).toHaveLength(0);
+  });
+
+  it('un penalti también es una parada: los cambios entran antes de tirarlo', () => {
+    const match = makeMatch({ seed: 'penalti-cambio', human: true });
+    until(match, 'swimOffWon', 20);
+    const out = match.inPlay(0)[4]!;
+    const into = match.benchOf(0)[0]!;
+    match.requestChange(0, out, into);
+    const events = match.forceCall(match.inPlay(1)[0]!, match.inPlay(0)[0]!, 'penalty', 'GOL CLARO');
+    expect(match.phase).toBe('penalty');
+    expect(events).toContainEqual(expect.objectContaining({ type: 'substitution', out, in: into }));
+    expect(match.inPlay(0)).toContain(into);
+  });
+
+  it('si el que sale está excluido, el cambio espera a la siguiente parada con él ya en el agua', { timeout: 30_000 }, () => {
+    const match = makeMatch({ seed: 'excluido-cambio', human: true });
+    until(match, 'swimOffWon', 20);
+    const out = match.inPlay(0)[1]!;
+    const into = match.benchOf(0)[0]!;
+    match.requestChange(0, out, into);
+    // He is sent off: the free throw is a dead ball, but he is not in the water to go off.
+    match.forceCall(out, match.inPlay(1)[0]!, 'exclusion', 'AGARRÓN');
+    expect(out.excluded).toBe(true);
+    expect(match.changesOf(0)).toEqual([{ out, in: into }]);
+    expect(match.benchOf(0)).toContain(into);
+    // Back in the water, and at the next stoppage the change is made.
+    for (let i = 0; i < 60 * 60 && out.excluded; i++) match.step(NEUTRAL);
+    expect(out.excluded).toBe(false);
+    match.forceCall(match.inPlay(1)[0]!, match.inPlay(0)[0]!, 'ordinary', 'FALTA');
+    expect(match.inPlay(0)).toContain(into);
+    expect(match.benchOf(0)).toContain(out);
+  });
+
   it('el que sale recupera en el banquillo y puede volver a entrar (sin límite de cambios)', () => {
     const match = makeMatch({ seed: 'vuelve', human: true });
     until(match, 'swimOffWon', 20);

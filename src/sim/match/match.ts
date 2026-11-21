@@ -648,21 +648,50 @@ export class Match {
   }
 
   /**
+   * The ball is dead right now and play has not restarted yet: a throw waiting for the whistle, or
+   * the line-up before the sprint. Changes asked for now come in at once (Julián: at the next
+   * stoppage, and this one counts).
+   */
+  get deadBall(): boolean {
+    if (this.lab) return false;
+    return (this.phase === 'setPiece' && this.setPiece !== null && !this.setPiece.whistled) || this.phase === 'swimOffReady';
+  }
+
+  /** Makes the human's changes now if the ball is dead (see `deadBall`); otherwise they wait. */
+  changesNow(events: MatchEvent[]): boolean {
+    if (!this.deadBall) return false;
+    const swapped = this.makeChanges(events, this.sides.filter((s) => s.human));
+    const sp = this.setPiece;
+    if (sp) {
+      const taker = swapped.get(sp.taker);
+      if (taker) {
+        sp.taker = taker;
+        if (this.mustPass) this.mustPass = taker;
+        if (this.noShot) this.noShot = taker;
+      }
+    }
+    return swapped.size > 0;
+  }
+
+  /**
    * A dead ball: the changes asked for are made, and the AI changes its tired players. Each
    * substitute takes the place of the one leaving (arcade: no swim to the re-entry area).
-   * Returns who replaced whom, so a taker already chosen can be swapped too.
+   * A change for a player who is excluded right now waits for the next one (he is not in the
+   * water to go off). Returns who replaced whom, so a taker already chosen can be swapped too.
    */
-  private makeChanges(events: MatchEvent[]): Map<Swimmer, Swimmer> {
+  private makeChanges(events: MatchEvent[], sides: readonly Side[] = this.sides): Map<Swimmer, Swimmer> {
     const swapped = new Map<Swimmer, Swimmer>();
     if (this.lab) return swapped;
-    for (const side of this.sides) {
+    for (const side of sides) {
       const asked = side.human ? this.changes[side.index] : this.aiChanges(side);
-      this.changes[side.index] = [];
+      const waiting: Change[] = [];
       for (const c of asked) {
-        if (!this.swap(side, c.out, c.in)) continue;
-        swapped.set(c.out, c.in);
-        events.push({ type: 'substitution', out: c.out, in: c.in, chosen: true });
+        if (this.swap(side, c.out, c.in)) {
+          swapped.set(c.out, c.in);
+          events.push({ type: 'substitution', out: c.out, in: c.in, chosen: true });
+        } else if (side.human && side.bench.includes(c.in) && side.out.some((ex) => ex.swimmer === c.out && !ex.forGame)) waiting.push(c);
       }
+      this.changes[side.index] = waiting;
     }
     if (swapped.size > 0) {
       this.refreshMovers();
@@ -3121,6 +3150,8 @@ export class Match {
 
   /** Penalty: the best shooter in the water from the 5 m, everybody else outside the 6 m (WP 16). */
   private startPenalty(side: TeamSide, events: MatchEvent[]): void {
+    // A dead ball too: the changes come in before the shooter is chosen.
+    this.makeChanges(events);
     const att = this.sides[side];
     const def = this.sides[(1 - side) as TeamSide];
     const goal = att.attacks;

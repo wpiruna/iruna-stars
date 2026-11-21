@@ -36,8 +36,11 @@ const clamp01 = (x: number): number => Math.min(1, Math.max(0, x));
 /** Level of the water with nobody swimming and with everybody sprinting (the old loudest). */
 const WATER_STILL = 0.018;
 const WATER_SPRINT = 0.07;
-/** Peak of the applause for one of our goals. */
-const APPLAUSE_GOAL = 0.16;
+/** Peak of the applause for one of our goals (Julián: an ovation, louder than the rest of the crowd). */
+const APPLAUSE_GOAL = 0.2;
+/** The murmur of the crowd: normal, and how high it goes while the stand celebrates a goal. */
+const CROWD_BASE = 0.02;
+const CROWD_OVATION = 0.15;
 /** The long goal whistle holds its level, so it starts a little lower than the short one. */
 const GOAL_WHISTLE = 0.085;
 
@@ -60,6 +63,8 @@ export class Sfx {
   private ambienceTick = 0;
   /** The swimming, smoothed: it rises quickly with a sprint and settles slowly with the attack. */
   private activity = 0;
+  /** Until then (audio clock) the crowd is celebrating and its murmur is not touched. */
+  private ovationUntil = 0;
 
   /** Browsers only allow audio after a user gesture: call this from the first tap or key. */
   unlock(): void {
@@ -238,7 +243,7 @@ export class Sfx {
     const now = ctx.currentTime;
     amb.water.gain.setTargetAtTime(WATER_STILL + (WATER_SPRINT - WATER_STILL) * a, now, 0.25);
     amb.spray.gain.setTargetAtTime(0.016 * a, now, 0.25);
-    amb.crowd?.gain.setTargetAtTime(0.02 + 0.04 * clamp01(tension), now, 0.6);
+    if (now >= this.ovationUntil) amb.crowd?.gain.setTargetAtTime(CROWD_BASE + 0.04 * clamp01(tension), now, 0.6);
   }
 
   /** The crowd reacts. Quiet if there is no crowd (training) or no ambience. */
@@ -259,15 +264,14 @@ export class Sfx {
       switch (moment) {
         case 'goalUs':
         case 'win':
-          // A roar that swells, then a long round of applause (Julián) that lasts through the replay.
-          this.burst(now, 2.4, 0.2 * k, { type: 'bandpass', from: 560, to: 900, q: 0.6, swell: 0.35 }, bus);
-          this.burst(now + 0.05, 2.0, 0.09 * k, { type: 'bandpass', from: 1500, to: 1900, q: 0.9, swell: 0.3 }, bus);
-          this.applause(now + 0.3, moment === 'win' ? 5 : 7.5, APPLAUSE_GOAL * k);
+          // The whole stand celebrates (Julián): an ovation that lasts through the replay.
+          this.ovation(now, k, moment === 'win' ? 6 : 9);
           break;
         case 'goalThem':
-          // Disappointment, and their supporters clapping for a while.
-          this.burst(now, 1.1, 0.1 * k, { type: 'bandpass', from: 650, to: 360, q: 0.8, swell: 0.12 }, bus);
-          this.applause(now + 0.25, 3.2, APPLAUSE_GOAL * 0.4 * k);
+          // Disappointment at home, and their few supporters celebrating at the far end.
+          this.burst(now, 1.3, 0.12 * k, { type: 'bandpass', from: 650, to: 340, q: 0.8, swell: 0.12 }, bus);
+          this.cheer(now + 0.15, 0.35 * k, 2.2, { voices: 7, far: true });
+          this.applause(now + 0.4, 4, APPLAUSE_GOAL * 0.4 * k);
           break;
         case 'saveUs':
           // "¡Uaaah!" and applause for our keeper.
@@ -307,6 +311,101 @@ export class Sfx {
     }
   }
 
+  /**
+   * A goal of ours: the murmur of the whole crowd rises and holds for a few seconds, they shout it
+   * ("¡gooool!"), a few whistle, and then a long round of applause (`seconds`) through the replay.
+   */
+  private ovation(now: number, k: number, seconds: number): void {
+    const amb = this.amb;
+    if (!amb?.crowd) return;
+    const crowd = amb.crowd.gain;
+    crowd.cancelScheduledValues(now);
+    crowd.setValueAtTime(crowd.value, now);
+    crowd.setTargetAtTime(CROWD_BASE + (CROWD_OVATION - CROWD_BASE) * k, now, 0.15);
+    crowd.setTargetAtTime(CROWD_BASE, now + 3.4, 1.3);
+    this.ovationUntil = now + 6;
+    this.cheer(now, k, 3.4, { voices: 18, far: false });
+    for (let i = 0; i < 4; i++) {
+      // Two fingers in the mouth: a whistle that goes up and comes down.
+      const at = now + 0.5 + Math.random() * 2.4;
+      const f = 2300 + Math.random() * 1000;
+      const length = 0.35 + Math.random() * 0.35;
+      this.tone(f, at, length * 0.4, 0.03 * k, 'sine', { attack: 0.04, to: f * 1.22 }, amb.bus);
+      this.tone(f * 1.22, at + length * 0.4, length * 0.6, 0.03 * k, 'sine', { attack: 0.01, to: f * 0.95 }, amb.bus);
+    }
+    this.applause(now + 0.6, seconds, APPLAUSE_GOAL * k);
+  }
+
+  /**
+   * A crowd shouting: a roar of noise in the band of voices that swells and holds, and on top many
+   * voices, each at its own pitch and a moment apart, through the vowel "o". `far` = a few
+   * supporters at the other end (duller).
+   */
+  private cheer(start: number, k: number, seconds: number, options: { voices: number; far: boolean }): void {
+    const ctx = this.context as AudioContext;
+    const amb = this.amb;
+    if (!amb || !this.noise) return;
+    const out = ctx.createGain();
+    out.gain.value = 1;
+    const tone = this.filter(ctx, 'lowpass', options.far ? 1300 : 3200, 0.5);
+    out.connect(tone).connect(amb.bus);
+    // The roar.
+    for (const [from, to, q, gain] of [
+      [520, 760, 0.6, 0.26],
+      [1350, 1700, 0.9, 0.1],
+    ] as const) {
+      const source = ctx.createBufferSource();
+      source.buffer = this.noise;
+      source.loop = true;
+      const band = ctx.createBiquadFilter();
+      band.type = 'bandpass';
+      band.Q.value = q;
+      band.frequency.setValueAtTime(from, start);
+      band.frequency.linearRampToValueAtTime(to, start + 0.6);
+      band.frequency.setTargetAtTime(from, start + seconds * 0.6, seconds * 0.2);
+      const envelope = ctx.createGain();
+      this.hold(envelope.gain, start, seconds, gain * k);
+      source.connect(band).connect(envelope).connect(out);
+      source.start(start, Math.random() * 0.5);
+      source.stop(start + seconds * 1.25);
+    }
+    // The voices: sawtooths through the formants of an "o" (500 and 900 Hz), men and women.
+    const voices = ctx.createGain();
+    voices.gain.value = 0.05 * k;
+    const f1 = this.filter(ctx, 'bandpass', 520, 3.5);
+    const f2 = this.filter(ctx, 'bandpass', 900, 4.5);
+    const f2Level = ctx.createGain();
+    f2Level.gain.value = 0.6;
+    voices.connect(f1).connect(out);
+    voices.connect(f2).connect(f2Level).connect(out);
+    for (let v = 0; v < options.voices; v++) {
+      const pitch = v % 3 === 2 ? 330 + Math.random() * 150 : 190 + Math.random() * 110;
+      const at = start + Math.random() * 0.35;
+      const length = seconds * (0.5 + 0.4 * Math.random());
+      const oscillator = ctx.createOscillator();
+      oscillator.type = 'sawtooth';
+      // Up into the shout, a little wobble, and down at the end.
+      const f = oscillator.frequency;
+      f.setValueAtTime(pitch * 0.82, at);
+      f.linearRampToValueAtTime(pitch, at + 0.25);
+      for (let t = at + 0.5; t < at + length - 0.3; t += 0.3 + Math.random() * 0.3) f.linearRampToValueAtTime(pitch * (0.97 + Math.random() * 0.06), t);
+      f.linearRampToValueAtTime(pitch * 0.8, at + length);
+      const envelope = ctx.createGain();
+      this.hold(envelope.gain, at, length, 0.4 + 0.6 * Math.random());
+      oscillator.connect(envelope).connect(voices);
+      oscillator.start(at);
+      oscillator.stop(at + length * 1.25);
+    }
+  }
+
+  /** An envelope that rises quickly, holds most of the time and fades out at the end. */
+  private hold(param: AudioParam, start: number, seconds: number, gain: number): void {
+    param.setValueAtTime(0.0001, start);
+    param.exponentialRampToValueAtTime(gain, start + Math.min(0.3, seconds * 0.15));
+    param.setTargetAtTime(gain * 0.75, start + seconds * 0.3, seconds * 0.25);
+    param.setTargetAtTime(0.0001, start + seconds * 0.7, seconds * 0.08);
+  }
+
   private applause(start: number, duration: number, gain: number): void {
     const ctx = this.context as AudioContext;
     const amb = this.amb;
@@ -323,7 +422,7 @@ export class Sfx {
     envelope.gain.setTargetAtTime(0.0001, start + duration * 0.55, duration * 0.18);
     source.connect(this.filter(ctx, 'bandpass', 1700, 0.45)).connect(envelope).connect(amb.bus);
     source.start(start, Math.random() * 3);
-    source.stop(start + duration + 0.3);
+    source.stop(start + duration * 1.25 + 0.3);
   }
 
   private makeNoise(ctx: AudioContext, seconds: number): AudioBuffer {
