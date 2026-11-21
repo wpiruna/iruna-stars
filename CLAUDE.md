@@ -19,7 +19,7 @@ Cada push a `main` convierte los datos, pasa los tests, compila y publica (`.git
 | `npm run datos` | Hoja + `assets/` → JSON de `data/`, imágenes optimizadas, iconos e `INFORME_DATOS.md`. |
 | `npm run rivales -- --regenerar <id>` | Rehace la plantilla guardada de un rival (`--todos` para todas). |
 | `npm test` | Vitest. |
-| `npm run sim -- partidos=200` | Partidos IA contra IA sin pantalla: comprueba que terminan y da el equilibrio (goles, tiros, pérdidas, tiempo por fase, faltas, exclusiones, penaltis, tarjetas y cifras por árbitro; `arbitro=<id>` fija uno). |
+| `npm run sim -- partidos=200` | Partidos IA contra IA sin pantalla: comprueba que terminan y da el equilibrio (goles, tiros, pérdidas, tiempo por fase, faltas, exclusiones, penaltis, tarjetas y cifras por árbitro; `arbitro=<id>` fija uno; `nuestro=1` juega nuestro equipo contra cada rival y da nuestros resultados). |
 | `npm run typecheck` | `tsc --noEmit`. |
 | `npm run build` | datos → tipos → web (`dist/`) → HTML único (`dist/waterpolo.html`) → control de peso. |
 | `npm run preview` | Sirve `dist/` en `http://localhost:4173/iruna-stars/`. |
@@ -145,10 +145,12 @@ src/persist/  src/ui/ (Preact; hud.ts es el estado del marcador; components/Benc
 - F3 aprobada («de momento está todo muy bien»). Julián pidió **2 periodos de 6 minutos** de marcador (4 de 8 era
   demasiado largo), con el reloj a la misma velocidad (3,2×): está en `reglas.json`; el GDD sigue diciendo 4 de 8.
   El botón del menú se llama **«Entrenamiento del jueves»**.
-- **Pendiente**: Julián está puntuando las barras de los 19 jugadores en una página con botones
-  (https://claude.ai/artifact/J6LxEjtBgqi5DNsZucuCin, colección `barras`, un documento `jugador-NN` con `valores`).
-  Cuando diga «ya está»: leerla con ArtifactData, escribirla con `tools/datos/escribir-hoja.py`, `npm run datos`,
-  comprobar y publicar. A Ángel (2) ya se le puso el rasgo Leñador en la hoja.
+- Barras de los 19 jugadores puntuadas por Julián en una página con botones
+  (https://claude.ai/artifact/J6LxEjtBgqi5DNsZucuCin, colección `barras`, un documento `jugador-NN` con `valores`) y
+  pasadas a la hoja el 21-11-2026 con `tools/datos/escribir-hoja.py`. Si las cambia ahí, repetir: leer con ArtifactData,
+  escribir en una copia, comprobar con el lector del juego, sustituir la hoja y `npm run datos`. A Ángel (2) se le puso
+  el rasgo Leñador. Con sus barras el equipo tiene media 7,2 (como un rival de nivel 7): `npm run sim -- nuestro=1` da
+  los resultados contra cada rival (gana casi siempre a los de nivel 2–5, parejo con 6–8, pierde con Poseidón).
 - Ritmo pedido por Julián tras probar la F4: transiciones rápidas y pocas pérdidas en ellas; **unas 2 de cada 3
   posesiones deben llegar al ataque en estático** (arco formado, ataque y defensa) con tiempo de posesión, y 1 de cada
   3 puede ser contra o robo. En la transición todos nadan más rápido, se roba menos y los defensores que vuelven

@@ -15,8 +15,6 @@ Este archivo lo escribe `npm run datos`. No lo edites: se sobrescribe en cada co
 
 ## Lo que queda por rellenar
 
-- Hay 155 barras vacías en la pestaña Jugadores; cada una vale 5 hasta que la rellenes.
-- Jugadores sin ninguna barra (19): Nº 1 Larry, Nº 2 Ángel, Nº 3 Beor, Nº 4 Borch, Nº 5 Aritz, Nº 6 Iker, Nº 7 Tainta, Nº 8 Iglesias, Nº 9 Eguilaz, Nº 10 Julen, Nº 11 Labairu, Nº 12 Rafa, Nº 13 Juli II, Nº 14 Bartu, Nº 15 Reclu, Nº 16 Juli I, Nº 17 Murua, Nº 18 Txema, Nº 19 Echandi.
 - Nuestro equipo se completa con 1 jugador(es) provisional(es) para poder hacer una convocatoria entera.
 - Faltan rivales reales: la Copa y los amistosos usan 10 equipos inventados.
 - No hay árbitros en la hoja: se usan los 4 provisionales.

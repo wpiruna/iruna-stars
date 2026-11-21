@@ -1,15 +1,17 @@
 /**
- * `npm run sim [-- partidos=20 periodo=480 velocidad=3.2 arbitro=prov-estricto]`: AI against AI
- * without a screen, to check that matches always finish and to tune the balance (goals, shots,
- * turnovers, time per phase, fouls, exclusions, penalties, cards). Uses the generated rival squads
- * and referees in data/, so levels, styles and referee profiles are the real ones.
+ * `npm run sim [-- partidos=20 periodo=480 velocidad=3.2 arbitro=prov-estricto nuestro=1]`: AI
+ * against AI without a screen, to check that matches always finish and to tune the balance (goals,
+ * shots, turnovers, time per phase, fouls, exclusions, penalties, cards). Uses the generated rival
+ * squads and referees in data/, so levels, styles and referee profiles are the real ones.
+ * `nuestro=1`: our team (with the sheet's bars, both sides played by the AI) against each rival in
+ * turn, with our results by rival.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Rng } from '../../src/core/rng';
-import { toReferee, toRivalTeam, type Player, type Referee, type Team } from '../../src/data/model';
-import { FormationsSchema, RefereeSchema, RivalTeamSchema, RosterSchema, RulesSchema } from '../../src/data/schema';
+import { toPlayer, toReferee, toRivalTeam, type Player, type Referee, type Team } from '../../src/data/model';
+import { FormationsSchema, OurTeamSchema, RefereeSchema, RivalTeamSchema, RosterSchema, RulesSchema } from '../../src/data/schema';
 import { pickLineup } from '../../src/sim/attack/formation';
 import { pickKeeper } from '../../src/sim/duel/shootout';
 import { fieldFromRules } from '../../src/sim/field';
@@ -30,6 +32,11 @@ const field = fieldFromRules(rules);
 const teams: Team[] = RivalTeamSchema.array()
   .parse(read('equipos.json'))
   .map((t) => toRivalTeam(t, RosterSchema.parse(read(`generado/rivales/${t.id}.json`))));
+const ourData = OurTeamSchema.parse(read('equipo.json'));
+const ourTeam: Team = { id: ourData.id, name: ourData.nombre, code: ourData.siglas, inCup: true, emilioTips: [], players: ourData.jugadores.map(toPlayer), origin: 'real' };
+const withUs = args.nuestro === '1';
+/** Our results against each rival (`nuestro=1`): won, drawn, lost, goals for and against. */
+const ourRecord = new Map<Team, { w: number; d: number; l: number; gf: number; ga: number }>();
 const SLOTS = ['boya', 'extremoIzq', 'extremoDer', 'lateralIzq', 'lateralDer', 'cierre'] as const;
 const sideOf = (team: Team) => {
   const field = [...pickLineup(team.players, [...SLOTS], tuning.ataque.zona.mano).keys()] as Player[];
@@ -61,9 +68,13 @@ const scores: number[] = [];
 const started = Date.now();
 
 for (let i = 0; i < matches; i++) {
-  const a = rng.pick(teams);
+  let a = rng.pick(teams);
   let b = rng.pick(teams);
   while (b === a) b = rng.pick(teams);
+  if (withUs) {
+    a = ourTeam;
+    b = teams[i % teams.length] as Team;
+  }
   const referee = chosenReferee ?? rng.pick(referees);
   const match = new Match({
     field,
@@ -172,6 +183,15 @@ for (let i = 0; i < matches; i++) {
     scores.push(s.goals);
   }
   const [ga, gb] = match.score;
+  if (withUs) {
+    const r = ourRecord.get(b) ?? { w: 0, d: 0, l: 0, gf: 0, ga: 0 };
+    if (ga > gb) r.w++;
+    else if (ga === gb) r.d++;
+    else r.l++;
+    r.gf += ga;
+    r.ga += gb;
+    ourRecord.set(b, r);
+  }
   if (ga === gb) totals.draws++;
   else if ((a.level ?? 5) !== (b.level ?? 5)) {
     totals.decided++;
@@ -208,6 +228,13 @@ console.log(
   `Energía al acabar cada periodo: media ${(energy.sum / Math.max(1, energy.count)).toFixed(2)} · por debajo del 50 % ${((100 * energy.tired) / Math.max(1, energy.count)).toFixed(0)} % · del ${Math.round(100 * tuning.partido.energia.aviso)} % ${((100 * energy.empty) / Math.max(1, energy.count)).toFixed(0)} % · cambios desde el banquillo por equipo ${(energy.changes / n).toFixed(1)}`,
 );
 console.log(`Motivos: ${Object.entries(motives).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${(v / matches).toFixed(2)}`).join(' · ')}`);
+if (withUs) {
+  console.log(`${ourTeam.code} contra cada rival (la IA juega por los dos; ganados-empatados-perdidos, goles a favor–en contra por partido):`);
+  for (const [team, r] of [...ourRecord].sort((x, y) => (x[0].level ?? 5) - (y[0].level ?? 5))) {
+    const played = r.w + r.d + r.l;
+    console.log(`  ${team.name.padEnd(16)} nivel ${team.level} · ${r.w}-${r.d}-${r.l} · ${(r.gf / played).toFixed(1)}–${(r.ga / played).toFixed(1)}`);
+  }
+}
 console.log('Por árbitro (exclusiones y penaltis por partido; "nos" = equipo 0):');
 for (const r of referees) {
   const x = byReferee[r.id];
